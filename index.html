@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tracé de tranchée</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--g:#073b2a;--g2:#087a4b;--bg:#f2f5f3;--line:#d5e2da;--red:#e53935;--blue:#1e5bd8;--gold:#e0a100;--green:#2e9e44}
+*{box-sizing:border-box}body{margin:0;font:15px/1.4 Arial,sans-serif;color:#17201c;background:var(--bg)}
+header{background:linear-gradient(115deg,#06251a,#073b2a 60%,#087a4b);color:#fff;padding:12px 16px}
+header h1{margin:0;font-size:20px}header p{margin:2px 0 0;opacity:.85;font-size:13px}
+main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+#drop{border:2px dashed #9fc4b1;border-radius:14px;padding:26px 16px;text-align:center;background:#f7fbf9;cursor:pointer}
+#drop.over{background:#e3f3ea}#drop b{font-size:17px;color:var(--g)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:#fff;color:var(--g);border-radius:12px;padding:9px 14px;font:700 15px Arial,sans-serif;cursor:pointer;min-height:44px;display:inline-flex;align-items:center;gap:6px}
+.btn:disabled{opacity:.45;cursor:default}.btn.on{outline:3px solid rgba(8,122,75,.35)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#fff}.btn.main{background:var(--g2);border-color:var(--g2);color:#fff}.btn.del{background:#fff;border-color:#f0b6b3;color:#c62828}
+.len{display:flex;align-items:center;gap:6px;font-weight:700;color:var(--g)}
+.len span.f{display:flex;border:2px solid var(--gold);border-radius:12px;overflow:hidden;background:#fff}
+.len input{width:96px;border:0;padding:9px 10px;font:800 17px Arial;outline:none}.len span.f b{display:flex;align-items:center;padding:0 10px;background:#fff6dc;color:#8a6400}
+#sel{min-height:66px}#sel.hint{background:#fff6dd;border-color:#f0d48a;font-size:14px;color:#4c5d54}
+#sel textarea{flex:1 1 220px;min-height:44px;border:1px solid #c9d8cf;border-radius:10px;padding:8px 10px;font:700 15px Arial;resize:vertical}
+.chips{display:flex;gap:6px}.chip{width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #c9d8cf;cursor:pointer}.chip.on{box-shadow:0 0 0 3px #17201c}
+#hint{margin:0;font-size:13px;color:#4c5d54}
+#wrap{position:relative;overflow:auto;background:#5f6763;border-radius:12px;height:70vh;touch-action:none}
+#cv{display:block;margin:0 auto;touch-action:none}
+.zoom{position:sticky;float:right;top:10px;right:10px;margin:10px 10px -54px 0;display:flex;gap:6px;z-index:5}
+.zoom button{width:44px;height:44px;border-radius:10px;border:0;background:#fff;font:700 20px Arial;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.msg{padding:8px 10px;border-radius:10px;font-size:13px;margin:0;background:#fff6dd;border:1px solid #f0d48a}
+@media(max-width:700px){#wrap{height:62vh}.btn{padding:8px 11px;font-size:14px}}
+</style></head><body>
+<header><h1>🚧 Tracé de tranchée</h1><p>Photo de drone : place le local technique, le PDL et le tracé de la tranchée, puis exporte en PDF ou PNG. La photo reste sur ton appareil.</p></header>
+<main>
+ <label id="drop" class="card"><input type="file" id="file" accept="image/*" hidden><b>📷 Choisir la photo du drone</b><br><span style="font-size:13px;color:#5b6b63">(ou glisse-la ici sur ordinateur)</span></label>
+ <div id="tools" hidden>
+  <div class="card bar">
+   <button class="btn red" id="bLocal" type="button">📍 Local technique</button>
+   <button class="btn blue" id="bPdl" type="button">📍 PDL</button>
+   <label class="len">Longueur <span class="f"><input id="len" type="text" inputmode="decimal" placeholder="ex. 250" autocomplete="off"><b>m</b></span></label>
+   <button class="btn" id="bText" type="button">💬 Ajouter du texte</button>
+   <button class="btn" id="bUndo" type="button" disabled>↺ Annuler</button>
+   <span style="flex:1"></span>
+   <button class="btn main" id="bPng" type="button">⬇ PNG</button>
+   <button class="btn main" id="bPdf" type="button">⬇ PDF</button>
+   <button class="btn" id="bNew" type="button" title="Changer de photo">📷 Autre photo</button>
+  </div>
+ </div>
+ <div id="wrap" hidden><div class="zoom"><button type="button" id="zin" title="Zoomer">＋</button><button type="button" id="zout" title="Dézoomer">−</button><button type="button" id="zfit" title="Toute la photo">⤢</button></div><canvas id="cv"></canvas></div>
+ <div class="card bar" id="sel" hidden></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const COL={rouge:'#e53935',bleu:'#1e5bd8',jaune:'#e0a100',vert:'#2e9e44'};
+// état : coordonnées en pixels de la photo d'origine
+const S={img:null,name:'',W:0,H:0,z:1,local:null,pdl:null,bends:[],len:{text:'',dx:null,dy:null},texts:[],sel:null,mode:'',undo:[]};
+const u=()=>Math.max(S.W,S.H)/1280;// unité de taille : les étiquettes suivent la taille de la photo
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function snap(){S.undo.push(JSON.stringify({local:S.local,pdl:S.pdl,bends:S.bends,len:S.len,texts:S.texts}));if(S.undo.length>60)S.undo.shift();$('bUndo').disabled=false;}
+function undo(){const s=S.undo.pop();if(!s)return;Object.assign(S,JSON.parse(s));S.sel=null;$('len').value=S.len.text;$('bUndo').disabled=!S.undo.length;ui();draw();}
+// ---------- photo ----------
+function takeFile(f){if(!f||!/^image\//.test(f.type)){alert('Choisis une photo (JPG ou PNG).');return;}
+ if(S.img&&(S.local||S.pdl||S.texts.length)&&!confirm('Changer de photo ? Le tracé en cours sera effacé.'))return;
+ const url=URL.createObjectURL(f);const im=new Image();im.onload=()=>{S.img=im;S.W=im.naturalWidth;S.H=im.naturalHeight;S.name=f.name.replace(/\.[^.]+$/,'');
+  Object.assign(S,{local:null,pdl:null,bends:[],len:{text:$('len').value||'',dx:null,dy:null},texts:[],sel:null,mode:'',undo:[]});$('bUndo').disabled=true;
+  $('drop').hidden=true;$('tools').hidden=false;$('wrap').hidden=false;$('sel').hidden=false;fit();ui();};im.onerror=()=>alert('Impossible de lire cette photo.');im.src=url;}
+$('file').addEventListener('change',e=>{takeFile(e.target.files[0]);e.target.value='';});
+$('bNew').onclick=()=>$('file').click();
+const dz=$('drop');dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});dz.addEventListener('dragleave',()=>dz.classList.remove('over'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');takeFile(e.dataTransfer.files[0]);});
+// ---------- zoom ----------
+function setZoom(z,cx,cy){const w=$('wrap');const r=w.getBoundingClientRect();cx=cx??r.width/2;cy=cy??r.height/2;const ix=(w.scrollLeft+cx)/S.z,iy=(w.scrollTop+cy)/S.z;
+ S.z=Math.max(0.03,Math.min(4,z));size();w.scrollLeft=ix*S.z-cx;w.scrollTop=iy*S.z-cy;draw();}
+function fit(){const w=$('wrap');// cadre à la forme de la photo (pas de grande bande grise sur téléphone)
+ w.style.height=Math.round(Math.max(240,Math.min(window.innerHeight*0.72,(w.clientWidth-4)*S.H/S.W+4)))+'px';S.z=Math.min((w.clientWidth-4)/S.W,(w.clientHeight-4)/S.H);size();w.scrollLeft=0;w.scrollTop=0;draw();}
+function size(){const c=$('cv');const cw=S.W*S.z,ch=S.H*S.z;let dpr=window.devicePixelRatio||1;if(cw*dpr>5000||ch*dpr>5000)dpr=Math.max(1,5000/Math.max(cw,ch));
+ c.style.width=cw+'px';c.style.height=ch+'px';c.width=Math.round(cw*dpr);c.height=Math.round(ch*dpr);c._dpr=dpr;
+ const w=$('wrap');c.style.marginTop=Math.max(0,(w.clientHeight-ch)/2)+'px';}
+$('zin').onclick=()=>setZoom(S.z*1.4);$('zout').onclick=()=>setZoom(S.z/1.4);$('zfit').onclick=fit;
+$('wrap').addEventListener('wheel',e=>{if(!S.img)return;e.preventDefault();const r=$('wrap').getBoundingClientRect();setZoom(S.z*(e.deltaY<0?1.15:1/1.15),e.clientX-r.left,e.clientY-r.top);},{passive:false});
+let rsz=0;window.addEventListener('resize',()=>{if(!S.img)return;clearTimeout(rsz);rsz=setTimeout(fit,150);});
+// ---------- géométrie ----------
+const path=()=>S.local&&S.pdl?[S.local,...S.bends,S.pdl]:[];
+function segDist(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy;let t=L?((p.x-a.x)*dx+(p.y-a.y)*dy)/L:0;t=Math.max(0,Math.min(1,t));return {d:Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy)),x:a.x+t*dx,y:a.y+t*dy};}
+function nearestOnPath(p){const P=path();let best=null;for(let i=0;i<P.length-1;i++){const s=segDist(p,P[i],P[i+1]);if(!best||s.d<best.d)best={...s,i};}return best;}
+function midPath(){const P=path();let L=0;for(let i=0;i<P.length-1;i++)L+=dist(P[i],P[i+1]);let h=L/2;for(let i=0;i<P.length-1;i++){const d=dist(P[i],P[i+1]);if(h<=d){const t=d?h/d:0;return {x:P[i].x+(P[i+1].x-P[i].x)*t,y:P[i].y+(P[i+1].y-P[i].y)*t};}h-=d;}return P[0];}
+// point du bord d'un rectangle (centre c, demi-tailles hw/hh) dans la direction de t
+function edge(c,hw,hh,t){const dx=t.x-c.x,dy=t.y-c.y;if(!dx&&!dy)return {x:c.x,y:c.y};const k=Math.min(hw/Math.abs(dx||1e-9),hh/Math.abs(dy||1e-9));return k>=1?{x:t.x,y:t.y}:{x:c.x+dx*k,y:c.y+dy*k};}
+// ---------- bulles ----------
+function bubbleBox(ctx,text,cx,cy){const U=u();ctx.font='bold '+(22*U)+'px Arial';const lines=String(text||' ').split('\n');const lh=27*U,pad=11*U;
+ const w=Math.max(...lines.map(l=>ctx.measureText(l).width))+2*pad,h=lines.length*lh+2*pad-5*U;return {x:cx-w/2,y:cy-h/2,w,h,lines,lh,pad};}
+function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBubble(ctx,b,col,from){const U=u();// from : point d'attache (le trait part de là)
+ if(from){const e=edge({x:b.x+b.w/2,y:b.y+b.h/2},b.w/2,b.h/2,from);ctx.strokeStyle=col;ctx.lineWidth=3*U;ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(e.x,e.y);ctx.stroke();}
+ ctx.save();ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=8*U;ctx.shadowOffsetY=2*U;ctx.fillStyle=col;rrect(ctx,b.x,b.y,b.w,b.h,5*U);ctx.fill();ctx.restore();
+ ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.textAlign='center';b.lines.forEach((l,i)=>ctx.fillText(l,b.x+b.w/2,b.y+b.pad+b.lh*(i+0.5)-2*U));}
+// étiquettes de marqueur : position par défaut (décalée en haut à droite)
+function markerLabel(m){return {x:m.x+(m.lx??110*u()),y:m.y+(m.ly??-70*u())};}
+function lenLabel(){const m=midPath();if(!m)return null;return {x:m.x+(S.len.dx??90*u()),y:m.y+(S.len.dy??70*u())};}
+const lenText=()=>{const v=String(S.len.text||'').trim();return v?v.replace('.',',')+' m':'';};
+// ---------- dessin ----------
+function paint(ctx,withUi){const U=u();ctx.drawImage(S.img,0,0,S.W,S.H);
+ const P=path();if(P.length){ctx.strokeStyle=COL.jaune;ctx.lineWidth=5*U;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();}
+ const mk=(m,col,txt)=>{if(!m)return;const hs=16*U;const L=markerLabel(m);const b=bubbleBox(ctx,txt,L.x,L.y);const st=edge(m,hs,hs,{x:b.x+b.w/2,y:b.y+b.h/2});
+  drawBubble(ctx,b,col,st);ctx.strokeStyle=col;ctx.lineWidth=4.5*U;rrect(ctx,m.x-hs,m.y-hs,2*hs,2*hs,4*U);ctx.stroke();};
+ mk(S.local,COL.rouge,S.local&&S.local.text||'Local');mk(S.pdl,COL.bleu,S.pdl&&S.pdl.text||'PDL');
+ const lt=lenText();if(lt&&P.length){const L=lenLabel();const b=bubbleBox(ctx,lt,L.x,L.y);const n=nearestOnPath({x:b.x+b.w/2,y:b.y+b.h/2});drawBubble(ctx,b,COL.jaune,n);}
+ S.texts.forEach(t=>{const b=bubbleBox(ctx,t.text,t.x,t.y);drawBubble(ctx,b,COL[t.color]||COL.rouge,t.ax!=null?{x:t.ax,y:t.ay}:null);});
+ if(!withUi)return;
+ // poignées (écran seulement) : angles du tracé, pointes des bulles de texte, sélection
+ const r=9/S.z;ctx.lineWidth=2.5/S.z;
+ S.bends.forEach((p,i)=>{const on=S.sel&&S.sel.k==='bend'&&S.sel.i===i;ctx.fillStyle=on?'#1d63d8':'#fff';ctx.strokeStyle='#222';ctx.beginPath();ctx.arc(p.x,p.y,on?r*1.35:r,0,7);ctx.fill();ctx.stroke();});
+ S.texts.forEach((t,i)=>{if(t.ax==null)return;const on=S.sel&&S.sel.k==='text'&&S.sel.i===i;ctx.fillStyle=on?'#1d63d8':'#fff';ctx.strokeStyle='#222';ctx.beginPath();ctx.arc(t.ax,t.ay,r*0.8,0,7);ctx.fill();ctx.stroke();});
+ const s=S.sel;if(s){let b=null;if(s.k==='text'){const t=S.texts[s.i];if(t)b=bubbleBox(ctx,t.text,t.x,t.y);}else if(s.k==='local'||s.k==='pdl'){const m=S[s.k];if(m){const hs=16*U;b={x:m.x-hs,y:m.y-hs,w:2*hs,h:2*hs};}}else if(s.k==='len'){const L=lenLabel();if(L)b=bubbleBox(ctx,lenText(),L.x,L.y);}
+  if(b){const g=6/S.z;ctx.setLineDash([8/S.z,5/S.z]);ctx.strokeStyle='#1d63d8';ctx.lineWidth=3/S.z;ctx.strokeRect(b.x-g,b.y-g,b.w+2*g,b.h+2*g);ctx.setLineDash([]);}}}
+function draw(){if(!S.img)return;const c=$('cv'),ctx=c.getContext('2d');const k=S.z*c._dpr;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,c.width,c.height);ctx.setTransform(k,0,0,k,0,0);paint(ctx,true);}
+// ---------- toucher ----------
+function pt(e){const r=$('cv').getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*S.W,y:(e.clientY-r.top)/r.height*S.H};}
+function hit(p){const tol=16/S.z,c=$('cv').getContext('2d'),U=u();const inB=(b,g)=>p.x>=b.x-g&&p.x<=b.x+b.w+g&&p.y>=b.y-g&&p.y<=b.y+b.h+g;
+ for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];if(t.ax!=null&&Math.hypot(p.x-t.ax,p.y-t.ay)<=tol)return {k:'tip',i};}
+ for(let i=S.bends.length-1;i>=0;i--)if(dist(p,S.bends[i])<=tol)return {k:'bend',i};
+ for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];if(inB(bubbleBox(c,t.text,t.x,t.y),4/S.z))return {k:'text',i};}
+ const lt=lenText();if(lt&&path().length){const L=lenLabel();if(inB(bubbleBox(c,lt,L.x,L.y),4/S.z))return {k:'len'};}
+ for(const k of ['local','pdl']){const m=S[k];if(!m)continue;const L=markerLabel(m);if(inB(bubbleBox(c,m.text||(k==='local'?'Local':'PDL'),L.x,L.y),4/S.z))return {k:k+'Lab'};if(Math.abs(p.x-m.x)<=16*U+tol&&Math.abs(p.y-m.y)<=16*U+tol)return {k};}
+ const n=nearestOnPath(p);if(n&&n.d<=tol+2.5*U)return {k:'line',n};return null;}
+let drag=null,pan=null;const cv=$('cv');
+cv.addEventListener('pointerdown',e=>{if(!S.img)return;const p=pt(e);
+ if(S.mode==='local'||S.mode==='pdl'){snap();const k=S.mode;S[k]=Object.assign(S[k]||{},{x:p.x,y:p.y});S.mode='';S.sel={k};ui();draw();return;}
+ const h=hit(p);if(!h){pan={x:e.clientX,y:e.clientY,l:$('wrap').scrollLeft,t:$('wrap').scrollTop,moved:false};cv.setPointerCapture(e.pointerId);return;}
+ if(h.k==='line'){snap();S.bends.splice(h.n.i,0,{x:h.n.x,y:h.n.y});drag={k:'bend',i:h.n.i,p0:p,moved:true,snapped:true,fresh:true};S.sel={k:'bend',i:h.n.i};}
+ else drag={...h,p0:p,moved:false,snapped:false};
+ cv.setPointerCapture(e.pointerId);e.preventDefault();draw();});
+cv.addEventListener('pointermove',e=>{if(pan){const dx=e.clientX-pan.x,dy=e.clientY-pan.y;if(Math.hypot(dx,dy)>4)pan.moved=true;$('wrap').scrollLeft=pan.l-dx;$('wrap').scrollTop=pan.t-dy;return;}
+ if(!drag)return;const p=pt(e);const dx=p.x-drag.p0.x,dy=p.y-drag.p0.y;if(!drag.moved&&Math.hypot(dx,dy)*S.z<5)return;
+ if(!drag.snapped){snap();drag.snapped=true;}drag.moved=true;const k=drag.k;
+ if(k==='bend'){S.bends[drag.i]={x:p.x,y:p.y};}
+ else if(k==='local'||k==='pdl'){const m=S[k];m.x=p.x;m.y=p.y;}
+ else if(k==='localLab'||k==='pdlLab'){const m=S[k.slice(0,-3)];const L=drag.L0||(drag.L0=markerLabel(m));m.lx=L.x+dx-m.x;m.ly=L.y+dy-m.y;}
+ else if(k==='len'){const L=drag.L0||(drag.L0=lenLabel());const m=midPath();S.len.dx=L.x+dx-m.x;S.len.dy=L.y+dy-m.y;}
+ else if(k==='text'){const t=S.texts[drag.i];const o=drag.o0||(drag.o0={x:t.x,y:t.y});t.x=o.x+dx;t.y=o.y+dy;}
+ else if(k==='tip'){const t=S.texts[drag.i];t.ax=p.x;t.ay=p.y;}
+ draw();});
+cv.addEventListener('pointerup',()=>{if(pan){const m=pan.moved;pan=null;if(!m&&S.sel){S.sel=null;ui();draw();}return;}if(!drag)return;const d=drag;drag=null;
+ if(!d.moved||d.fresh){const k=d.k==='localLab'?'local':d.k==='pdlLab'?'pdl':d.k==='tip'?'text':d.k;S.sel={k,i:d.i};}ui();draw();});
+// ---------- boutons ----------
+$('bLocal').onclick=()=>{S.mode=S.mode==='local'?'':'local';ui();};
+$('bPdl').onclick=()=>{S.mode=S.mode==='pdl'?'':'pdl';ui();};
+$('len').addEventListener('focus',()=>{$('len')._snap=false;});
+$('len').addEventListener('input',()=>{if(!$('len')._snap){snap();$('len')._snap=true;}S.len.text=$('len').value.replace(/[^\d.,]/g,'');ui();draw();});
+$('bText').onclick=()=>{snap();const w=$('wrap'),r=w.getBoundingClientRect();const cx=(w.scrollLeft+r.width/2)/S.z,cy=(w.scrollTop+r.height/2)/S.z;
+ S.texts.push({x:cx,y:cy,ax:cx-120*u(),ay:cy+90*u(),text:'Texte',color:'rouge'});S.sel={k:'text',i:S.texts.length-1};ui();draw();setTimeout(()=>{const ta=$('selText');if(ta){ta.focus();ta.select();}},30);};
+$('bUndo').onclick=undo;
+// panneau de la sélection
+function ui(){const s=S.sel,el=$('sel');let h='';
+ $('bLocal').classList.toggle('on',S.mode==='local');$('bPdl').classList.toggle('on',S.mode==='pdl');$('bLocal').innerHTML=(S.local?'↔ ':'📍 ')+'Local technique';$('bPdl').innerHTML=(S.pdl?'↔ ':'📍 ')+'PDL';
+ if(s&&s.k==='bend')h='<b style="color:#1d63d8">Angle du tracé sélectionné</b><button class="btn del" type="button" data-a="delBend">🗑 Supprimer l’angle</button>';
+ else if(s&&s.k==='text'&&S.texts[s.i]){const t=S.texts[s.i];h='<textarea id="selText" rows="1" placeholder="Ton texte">'+t.text.replace(/</g,'&lt;')+'</textarea><span class="chips">'+Object.keys(COL).map(c=>'<span class="chip'+(t.color===c?' on':'')+'" data-c="'+c+'" title="'+c+'" style="background:'+COL[c]+'"></span>').join('')+'</span><button class="btn del" type="button" data-a="delText">🗑 Supprimer la bulle</button>';}
+ else if(s&&(s.k==='local'||s.k==='pdl')&&S[s.k]){const m=S[s.k];h='<b style="color:'+(s.k==='local'?COL.rouge:COL.bleu)+'">'+(s.k==='local'?'Local technique':'PDL')+'</b> Texte : <textarea id="selMk" rows="1">'+(m.text||(s.k==='local'?'Local':'PDL')).replace(/</g,'&lt;')+'</textarea><button class="btn del" type="button" data-a="delMk">🗑 Retirer</button>';}
+ else if(s&&s.k==='len')h='<b style="color:'+COL.jaune+'">Longueur</b> : tape-la dans la case « Longueur » en haut ; fais glisser la bulle pour la placer.';
+ // une seule zone, de hauteur fixe : la sélection, sinon l'aide (la photo ne bouge pas)
+ el.classList.toggle('hint',!h);if(h){el.innerHTML=h;}else el.innerHTML='<span>'+(S.mode==='local'?'👆 Touche la photo à l’endroit du <b>local technique</b>.':S.mode==='pdl'?'👆 Touche la photo à l’endroit du <b>PDL</b>.':
+  !S.local||!S.pdl?'1. Place le <b>Local technique</b> et le <b>PDL</b> : le trait de la tranchée se met tout seul entre les deux.':
+  'Touche le <b>trait jaune</b> pour ajouter un angle, puis fais-le glisser. Tout se déplace en le faisant glisser (étiquettes comprises). Touche un angle pour le supprimer.'+(lenText()?'':' Tape la <b>longueur</b> en haut.'))+'</span>';
+ $('bPng').disabled=$('bPdf').disabled=!S.img;}
+$('sel').addEventListener('click',e=>{const a=e.target.closest('[data-a]'),c=e.target.closest('[data-c]');const s=S.sel;if(!s)return;
+ if(c&&s.k==='text'){snap();S.texts[s.i].color=c.dataset.c;ui();draw();return;}if(!a)return;snap();
+ if(a.dataset.a==='delBend')S.bends.splice(s.i,1);else if(a.dataset.a==='delText')S.texts.splice(s.i,1);else if(a.dataset.a==='delMk')S[s.k]=null;S.sel=null;ui();draw();});
+$('sel').addEventListener('focusin',e=>{if(e.target.tagName==='TEXTAREA')e.target._snap=false;});
+$('sel').addEventListener('input',e=>{const s=S.sel;if(!s)return;const ta=e.target;if(!ta._snap){snap();ta._snap=true;}
+ if(ta.id==='selText'&&S.texts[s.i])S.texts[s.i].text=ta.value;else if(ta.id==='selMk'&&S[s.k])S[s.k].text=ta.value;draw();});
+// ---------- export ----------
+function full(){const c=document.createElement('canvas');c.width=S.W;c.height=S.H;paint(c.getContext('2d'),false);return c;}
+function save(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);}
+const fname=ext=>'Trace tranchee - '+(S.name||'photo')+'.'+ext;
+$('bPng').onclick=()=>{const b=$('bPng');b.disabled=true;b.textContent='⏳ PNG…';setTimeout(()=>{full().toBlob(bl=>{save(bl,fname('png'));b.disabled=false;b.textContent='⬇ PNG';},'image/png');},30);};
+$('bPdf').onclick=()=>{if(!window.jspdf){alert('PDF indisponible (pas de connexion ?). Utilise le PNG.');return;}const b=$('bPdf');b.disabled=true;b.textContent='⏳ PDF…';setTimeout(()=>{try{
+ const c=full();const land=S.W>=S.H;const wmm=land?297:210,hmm=wmm*S.H/S.W;const doc=new jspdf.jsPDF({orientation:land?'landscape':'portrait',unit:'mm',format:[wmm,hmm]});
+ doc.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',0,0,wmm,hmm);save(doc.output('blob'),fname('pdf'));}catch(err){alert('PDF impossible : '+(err.message||err));}b.disabled=false;b.textContent='⬇ PDF';},30);};
+window.addEventListener('beforeunload',e=>{if(S.img&&(S.local||S.pdl||S.texts.length)){e.preventDefault();e.returnValue='';}});
+window.__S=S;
+</script></body></html>
