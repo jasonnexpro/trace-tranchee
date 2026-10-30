@@ -27,6 +27,8 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
 #cv{display:block;margin:0 auto;touch-action:none}
 .zoom{display:flex;gap:6px;justify-content:flex-end;align-items:center;margin:0 0 -4px}.zoom[hidden]{display:none}.zoom span{font-size:13px;font-weight:700;color:#4c5d54;margin-right:2px}
 .zoom button{width:44px;height:40px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--g);font:700 20px Arial;cursor:pointer}
+#meta{display:flex;gap:10px;flex-wrap:wrap}#meta label{flex:1 1 200px;display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:13px;color:var(--g)}#meta label i{color:var(--red);font-style:normal}
+#meta input{border:1px solid #c9d8cf;border-radius:10px;padding:9px 10px;font:700 16px Arial;min-height:44px}#meta input.bad{border:2px solid var(--red);background:#fff1f0}
 #sigModal{position:fixed;inset:0;background:rgba(10,25,18,.55);display:flex;align-items:center;justify-content:center;padding:12px;z-index:50}#sigModal[hidden]{display:none}
 #sigModal .box{background:#fff;border-radius:16px;max-width:900px;width:100%;max-height:100%;overflow:auto;padding:14px}
 #sigModal h2{margin:0 0 4px;font-size:19px;color:var(--g)}#sigModal .sub{margin:0 0 10px;font-size:13px;color:#4c5d54}
@@ -41,6 +43,7 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
 </style></head><body>
 <header><h1>🚧 Longueur PDL</h1><p>Photo de drone : place le local technique, le PDL et le tracé de la tranchée, puis exporte en PDF ou PNG. La photo reste sur ton appareil.</p></header>
 <main>
+ <div id="meta" class="card"><label><span>Code affaire <i>*</i></span><input id="mAff" type="text" placeholder="ex. 13356" autocomplete="off"></label><label><span>Nom du client <i>*</i></span><input id="mCli" type="text" placeholder="ex. DUPONT Jean" autocomplete="off"></label></div>
  <label id="drop" class="card"><input type="file" id="file" accept="image/*" hidden><b>📷 Choisir la photo du drone</b><br><span style="font-size:13px;color:#5b6b63">(ou glisse-la ici sur ordinateur)</span></label>
  <div id="tools" hidden>
   <div class="card bar">
@@ -200,9 +203,15 @@ $('sel').addEventListener('input',e=>{const s=S.sel;if(!s)return;const ta=e.targ
 // ---------- signatures (conducteur de travaux + client), dans une bande sous la photo à l'export ----------
 const SIG={cond:{t:'Conducteur de travaux',has:false},cli:{t:'Client',has:false},date:''};
 const sigName=k=>$('sgN'+k).value.trim();
-const sigOn=()=>['cond','cli'].some(k=>SIG[k].has||sigName(k));
+const sigOn=()=>SIG.cond.has||SIG.cli.has;// la bande n'apparaît que si quelqu'un a signé (les noms sont pré-remplis)
+// nom du conducteur transmis par l'appli Suivi Chantier (?conducteur=…) ; nom du client recopié depuis la case du haut
+const COND=(new URLSearchParams(location.search).get('conducteur')||'').trim();let lastCli='';
 function sigClear(k){const c=$('sgP'+k);c.getContext('2d').clearRect(0,0,c.width,c.height);SIG[k].has=false;}
-function sigReset(){['cond','cli'].forEach(k=>{sigClear(k);$('sgN'+k).value='';});SIG.date='';sigBtn();}
+function sigReset(){['cond','cli'].forEach(k=>sigClear(k));$('sgNcond').value=COND;lastCli=$('mCli').value.trim();$('sgNcli').value=lastCli;SIG.date='';sigBtn();}
+$('mCli').addEventListener('input',()=>{const v=$('mCli').value.trim(),s=$('sgNcli');if(s.value.trim()===lastCli)s.value=v;lastCli=v;});
+['mAff','mCli'].forEach(id=>$(id).addEventListener('input',()=>$(id).classList.remove('bad')));
+function metaOk(){let bad=null;['mAff','mCli'].forEach(id=>{const x=$(id),e=!x.value.trim();x.classList.toggle('bad',e);if(e&&!bad)bad=x;});
+ if(bad){alert('Renseigne le code affaire et le nom du client avant d’exporter.');bad.scrollIntoView({behavior:'smooth',block:'center'});bad.focus();return false;}return true;}
 function sigBtn(){$('bSig').innerHTML=sigOn()?'✍️ Signatures ✓':'✍️ Signatures';}
 ['cond','cli'].forEach(k=>{const c=$('sgP'+k),g=c.getContext('2d');let last=null;
  const at=e=>{const r=c.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*c.width,y:(e.clientY-r.top)/r.height*c.height};};
@@ -222,9 +231,11 @@ function drawBand(ctx,y0){const W=S.W,bh=bandH(),m=bh*0.07,bw=(W-3*m)/2,h=bh-2*m
 // ---------- export ----------
 function full(){const c=document.createElement('canvas');const band=sigOn()?bandH():0;c.width=S.W;c.height=S.H+band;const g=c.getContext('2d');paint(g,false);if(band)drawBand(g,S.H);return c;}
 function save(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);}
-const fname=ext=>'Longueur PDL - '+(S.name||'photo')+'.'+ext;
-$('bPng').onclick=()=>{const b=$('bPng');b.disabled=true;b.textContent='⏳ PNG…';setTimeout(()=>{full().toBlob(bl=>{save(bl,fname('png'));b.disabled=false;b.textContent='⬇ PNG';},'image/png');},30);};
-$('bPdf').onclick=()=>{if(!window.jspdf){alert('PDF indisponible (pas de connexion ?). Utilise le PNG.');return;}const b=$('bPdf');b.disabled=true;b.textContent='⏳ PDF…';setTimeout(()=>{try{
+const cleanName=s=>String(s||'').replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();
+const fname=ext=>'Longueur PDL - '+cleanName($('mAff').value)+' - '+cleanName($('mCli').value)+'.'+ext;
+sigReset();
+$('bPng').onclick=()=>{if(!metaOk())return;const b=$('bPng');b.disabled=true;b.textContent='⏳ PNG…';setTimeout(()=>{full().toBlob(bl=>{save(bl,fname('png'));b.disabled=false;b.textContent='⬇ PNG';},'image/png');},30);};
+$('bPdf').onclick=()=>{if(!metaOk())return;if(!window.jspdf){alert('PDF indisponible (pas de connexion ?). Utilise le PNG.');return;}const b=$('bPdf');b.disabled=true;b.textContent='⏳ PDF…';setTimeout(()=>{try{
  const c=full();const land=c.width>=c.height;const wmm=land?297:210,hmm=wmm*c.height/c.width;const doc=new jspdf.jsPDF({orientation:land?'landscape':'portrait',unit:'mm',format:[wmm,hmm]});
  doc.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',0,0,wmm,hmm);save(doc.output('blob'),fname('pdf'));}catch(err){alert('PDF impossible : '+(err.message||err));}b.disabled=false;b.textContent='⬇ PDF';},30);};
 window.addEventListener('beforeunload',e=>{if(S.img&&(S.local||S.pdl||S.texts.length||sigOn())){e.preventDefault();e.returnValue='';}});
