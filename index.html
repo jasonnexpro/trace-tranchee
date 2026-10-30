@@ -54,6 +54,7 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
    <button class="btn" id="bSig" type="button">✍️ Signatures</button>
    <button class="btn" id="bUndo" type="button" disabled>↺ Annuler</button>
    <span style="flex:1"></span>
+   <button class="btn gold" id="bSave" type="button" hidden>💾 Enregistrer dans le suivi</button>
    <button class="btn main" id="bPng" type="button">⬇ PNG</button>
    <button class="btn main" id="bPdf" type="button">⬇ PDF</button>
    <button class="btn" id="bNew" type="button" title="Changer de photo">📷 Autre photo</button>
@@ -78,14 +79,20 @@ const COL={rouge:'#e53935',bleu:'#1e5bd8',jaune:'#e0a100',vert:'#2e9e44'};
 const S={img:null,name:'',W:0,H:0,z:1,local:null,pdl:null,bends:[],len:{text:'',dx:null,dy:null},texts:[],sel:null,mode:'',undo:[]};
 const u=()=>Math.max(S.W,S.H)/1280;// unité de taille : les étiquettes suivent la taille de la photo
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-function snap(){S.undo.push(JSON.stringify({local:S.local,pdl:S.pdl,bends:S.bends,len:S.len,texts:S.texts}));if(S.undo.length>60)S.undo.shift();$('bUndo').disabled=false;}
+// ---------- lien avec Suivi Chantier (?embed=1 : ouvert depuis le point « distance tgbt-pdl en ml ») ----------
+const Q=new URLSearchParams(location.search),EMBED=Q.get('embed')==='1';
+let dirty=false,parentOrigin='',pendingSave=null;
+function parentOk(o){return /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.googleusercontent\.com$/.test(o)||o==='https://script.google.com'||/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o);}
+function toParent(m){if(!parentOrigin)return;try{window.parent.postMessage(Object.assign({sc:'tool',tool:'pdl'},m),parentOrigin);}catch(e){}}
+function setDirty(v){if(dirty===v)return;dirty=v;toParent({type:'dirty',value:v});}
+function snap(){setDirty(true);S.undo.push(JSON.stringify({local:S.local,pdl:S.pdl,bends:S.bends,len:S.len,texts:S.texts}));if(S.undo.length>60)S.undo.shift();$('bUndo').disabled=false;}
 function undo(){const s=S.undo.pop();if(!s)return;Object.assign(S,JSON.parse(s));S.sel=null;$('len').value=S.len.text;$('bUndo').disabled=!S.undo.length;ui();draw();}
 // ---------- photo ----------
 function takeFile(f){if(!f||!/^image\//.test(f.type)){alert('Choisis une photo (JPG ou PNG).');return;}
  if(S.img&&(S.local||S.pdl||S.texts.length||sigOn())&&!confirm('Changer de photo ? Le tracé en cours et les signatures seront effacés.'))return;
  const url=URL.createObjectURL(f);const im=new Image();im.onload=()=>{S.img=im;S.W=im.naturalWidth;S.H=im.naturalHeight;S.name=f.name.replace(/\.[^.]+$/,'');
   Object.assign(S,{local:null,pdl:null,bends:[],len:{text:$('len').value||'',dx:null,dy:null},texts:[],sel:null,mode:'',undo:[]});$('bUndo').disabled=true;sigReset();
-  $('drop').hidden=true;$('tools').hidden=false;$('wrap').hidden=false;$('sel').hidden=false;$('zbar').hidden=false;fit();ui();};im.onerror=()=>alert('Impossible de lire cette photo.');im.src=url;}
+  $('drop').hidden=true;$('tools').hidden=false;$('wrap').hidden=false;$('sel').hidden=false;$('zbar').hidden=false;fit();ui();setDirty(true);};im.onerror=()=>alert('Impossible de lire cette photo.');im.src=url;}
 $('file').addEventListener('change',e=>{takeFile(e.target.files[0]);e.target.value='';});
 $('bNew').onclick=()=>$('file').click();
 const dz=$('drop');dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});dz.addEventListener('dragleave',()=>dz.classList.remove('over'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');takeFile(e.dataTransfer.files[0]);});
@@ -215,7 +222,7 @@ function metaOk(){let bad=null;['mAff','mCli'].forEach(id=>{const x=$(id),e=!x.v
 function sigBtn(){$('bSig').innerHTML=sigOn()?'✍️ Signatures ✓':'✍️ Signatures';}
 ['cond','cli'].forEach(k=>{const c=$('sgP'+k),g=c.getContext('2d');let last=null;
  const at=e=>{const r=c.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*c.width,y:(e.clientY-r.top)/r.height*c.height};};
- c.addEventListener('pointerdown',e=>{try{c.setPointerCapture(e.pointerId);}catch(err){}last=at(e);g.fillStyle='#12233a';g.beginPath();g.arc(last.x,last.y,2.5,0,7);g.fill();SIG[k].has=true;e.preventDefault();});
+ c.addEventListener('pointerdown',e=>{try{c.setPointerCapture(e.pointerId);}catch(err){}setDirty(true);last=at(e);g.fillStyle='#12233a';g.beginPath();g.arc(last.x,last.y,2.5,0,7);g.fill();SIG[k].has=true;e.preventDefault();});
  c.addEventListener('pointermove',e=>{if(!last)return;const p=at(e);g.strokeStyle='#12233a';g.lineWidth=5;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(last.x,last.y);g.lineTo(p.x,p.y);g.stroke();last=p;e.preventDefault();});
  const end=()=>{last=null;};c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
  $('sgN'+k).addEventListener('input',sigBtn);});
@@ -238,6 +245,36 @@ $('bPng').onclick=()=>{if(!metaOk())return;const b=$('bPng');b.disabled=true;b.t
 $('bPdf').onclick=()=>{if(!metaOk())return;if(!window.jspdf){alert('PDF indisponible (pas de connexion ?). Utilise le PNG.');return;}const b=$('bPdf');b.disabled=true;b.textContent='⏳ PDF…';setTimeout(()=>{try{
  const c=full();const land=c.width>=c.height;const wmm=land?297:210,hmm=wmm*c.height/c.width;const doc=new jspdf.jsPDF({orientation:land?'landscape':'portrait',unit:'mm',format:[wmm,hmm]});
  doc.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',0,0,wmm,hmm);save(doc.output('blob'),fname('pdf'));}catch(err){alert('PDF impossible : '+(err.message||err));}b.disabled=false;b.textContent='⬇ PDF';},30);};
-window.addEventListener('beforeunload',e=>{if(S.img&&(S.local||S.pdl||S.texts.length||sigOn())){e.preventDefault();e.returnValue='';}});
+// ---------- enregistrement dans le suivi : image JPEG + données modifiables (photo allégée, tracé, signatures) ----------
+function loadImg(src){return new Promise((ok,ko)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=()=>ko(new Error('image illisible'));im.src=src;});}
+async function restore(d){const im=await loadImg(d.img);const s=d.s||{};
+ S.img=im;S.W=im.naturalWidth;S.H=im.naturalHeight;S.name='';Object.assign(S,{local:s.local||null,pdl:s.pdl||null,bends:Array.isArray(s.bends)?s.bends:[],len:Object.assign({text:'',dx:null,dy:null},s.len||{}),texts:Array.isArray(s.texts)?s.texts:[],sel:null,mode:'',undo:[]});
+ $('len').value=S.len.text||'';$('bUndo').disabled=true;if(d.aff)$('mAff').value=d.aff;if(d.cli)$('mCli').value=d.cli;sigReset();
+ const g=d.sig||{};for(const k of ['cond','cli']){const x=g[k]||{};if(x.name!=null)$('sgN'+k).value=x.name;if(x.img){try{const si=await loadImg(x.img);const c=$('sgP'+k);c.getContext('2d').drawImage(si,0,0,c.width,c.height);SIG[k].has=true;}catch(e){}}}
+ SIG.date=sigOn()?String(g.date||''):'';sigBtn();
+ $('drop').hidden=true;$('tools').hidden=false;$('wrap').hidden=false;$('sel').hidden=false;$('zbar').hidden=false;fit();ui();}
+function buildData(){const s=Math.min(1,2400/Math.max(S.W,S.H)),k=v=>v==null?v:v*s;const c=document.createElement('canvas');c.width=Math.round(S.W*s);c.height=Math.round(S.H*s);c.getContext('2d').drawImage(S.img,0,0,c.width,c.height);
+ const pt=m=>m?Object.assign({},m,{x:m.x*s,y:m.y*s,lx:k(m.lx),ly:k(m.ly)}):null;
+ const sig={date:SIG.date};['cond','cli'].forEach(q=>{sig[q]={name:$('sgN'+q).value,img:SIG[q].has?$('sgP'+q).toDataURL('image/png'):''};});
+ return {v:1,tool:'pdl',savedAt:Date.now(),aff:$('mAff').value,cli:$('mCli').value,img:c.toDataURL('image/jpeg',0.85),sig,
+  s:{local:pt(S.local),pdl:pt(S.pdl),bends:S.bends.map(b=>({x:b.x*s,y:b.y*s})),len:{text:S.len.text,dx:k(S.len.dx),dy:k(S.len.dy)},texts:S.texts.map(t=>Object.assign({},t,{x:t.x*s,y:t.y*s,ax:k(t.ax),ay:k(t.ay)}))}};}
+function outJpeg(){const f=full(),s=Math.min(1,3000/Math.max(f.width,f.height));let c=f;if(s<1){c=document.createElement('canvas');c.width=Math.round(f.width*s);c.height=Math.round(f.height*s);c.getContext('2d').drawImage(f,0,0,c.width,c.height);}return new Promise(ok=>c.toBlob(ok,'image/jpeg',0.88));}
+$('bSave').onclick=async()=>{if(!metaOk())return;const b=$('bSave');b.disabled=true;b.textContent='⏳ Enregistrement…';
+ try{S.sel=null;draw();const blob=await outJpeg();const data=buildData();
+  await new Promise((ok,ko)=>{pendingSave={ok,ko};toParent({type:'save',file:{name:fname('jpg'),blob},data,summary:lenText()?'Longueur '+lenText():''});setTimeout(()=>ko(new Error('le suivi ne répond pas')),180000);});
+  setDirty(false);
+ }catch(e){alert('Pas enregistré dans le suivi : '+(e.message||e)+'\nRéessaie.');}finally{pendingSave=null;b.disabled=false;b.textContent='💾 Enregistrer dans le suivi';}};
+window.addEventListener('message',e=>{if(!parentOrigin||e.source!==window.parent||e.origin!==parentOrigin)return;const d=e.data||{};if(d.sc!=='suivi'||!pendingSave)return;if(d.type==='saved')pendingSave.ok();if(d.type==='error')pendingSave.ko(new Error(d.message||'erreur inconnue'));});
+['mAff','mCli','sgNcond','sgNcli','len'].forEach(id=>$(id).addEventListener('input',()=>setDirty(true)));
+if(Q.get('affaire'))$('mAff').value=Q.get('affaire');if(Q.get('client')){$('mCli').value=Q.get('client');sigReset();}
+if(EMBED){$('bSave').hidden=false;document.querySelector('header p').textContent='Relevé du suivi : touche « 💾 Enregistrer dans le suivi » quand tu as fini.';
+ (async()=>{const msg=await new Promise(ok=>{let n=0;const ping=()=>{try{window.parent.postMessage({sc:'tool',tool:'pdl',type:'ready'},'*');}catch(e){}};const t=setInterval(()=>{if(++n>75){clearInterval(t);window.removeEventListener('message',h);ok({timeout:true});}else ping();},400);
+   function h(e){const d=e.data||{};if(e.source!==window.parent||!parentOk(e.origin)||d.sc!=='suivi'||d.type!=='load')return;parentOrigin=e.origin;clearInterval(t);window.removeEventListener('message',h);ok(d);}
+   window.addEventListener('message',h);ping();});
+  if(msg.timeout){alert('Le suivi ne répond pas : ferme puis rouvre Longueur PDL depuis le point de contrôle.');return;}
+  if(msg.data&&msg.data.img){try{await restore(msg.data);}catch(e){alert('La version enregistrée dans le suivi n’a pas pu être ouverte : '+(e.message||e));}}
+  else if(msg.error)alert('La version enregistrée dans le suivi n’a pas pu être ouverte ('+msg.error+').');
+  dirty=true;setDirty(false);})();}
+window.addEventListener('beforeunload',e=>{if(EMBED)return;if(S.img&&(S.local||S.pdl||S.texts.length||sigOn())){e.preventDefault();e.returnValue='';}});
 window.__S=S;
 </script></body></html>
