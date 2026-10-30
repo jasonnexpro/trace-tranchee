@@ -29,6 +29,9 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
 .zoom button{width:44px;height:40px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--g);font:700 20px Arial;cursor:pointer}
 #meta{display:flex;gap:10px;flex-wrap:wrap}#meta label{flex:1 1 200px;display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:13px;color:var(--g)}#meta label i{color:var(--red);font-style:normal}
 #meta input{border:1px solid #c9d8cf;border-radius:10px;padding:9px 10px;font:700 16px Arial;min-height:44px}#meta input.bad{border:2px solid var(--red);background:#fff1f0}
+#etat{flex:1 1 100%;display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:13px;color:var(--g)}#etat i{color:var(--red);font-style:normal}#etat .opts{display:flex;gap:8px;flex-wrap:wrap}
+#etat label{flex:1 1 150px;display:flex;align-items:center;gap:8px;border:1px solid #c9d8cf;border-radius:10px;padding:8px 10px;min-height:44px;font:700 15px Arial;color:#17201c;cursor:pointer;background:#fff}
+#etat label:has(input:checked){border:2px solid var(--g2);background:#e9f6ef}#etat input{width:20px;height:20px;margin:0;accent-color:var(--g2)}#etat.bad .opts label{border:2px solid var(--red);background:#fff1f0}
 #sigModal{position:fixed;inset:0;background:rgba(10,25,18,.55);display:flex;align-items:center;justify-content:center;padding:12px;z-index:50}#sigModal[hidden]{display:none}
 #sigModal .box{background:#fff;border-radius:16px;max-width:900px;width:100%;max-height:100%;overflow:auto;padding:14px}
 #sigModal h2{margin:0 0 4px;font-size:19px;color:var(--g)}#sigModal .sub{margin:0 0 10px;font-size:13px;color:#4c5d54}
@@ -43,7 +46,8 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
 </style></head><body>
 <header><h1>🚧 Longueur PDL</h1><p>Photo de drone : place le local technique, le PDL et le tracé de la tranchée, puis exporte en PDF ou PNG. La photo reste sur ton appareil.</p></header>
 <main>
- <div id="meta" class="card"><label><span>Code affaire <i>*</i></span><input id="mAff" type="text" placeholder="ex. 13356" autocomplete="off"></label><label><span>Nom du client <i>*</i></span><input id="mCli" type="text" placeholder="ex. DUPONT Jean" autocomplete="off"></label></div>
+ <div id="meta" class="card"><label><span>Code affaire <i>*</i></span><input id="mAff" type="text" placeholder="ex. 13356" autocomplete="off"></label><label><span>Nom du client <i>*</i></span><input id="mCli" type="text" placeholder="ex. DUPONT Jean" autocomplete="off"></label>
+  <div id="etat" role="radiogroup" aria-label="État du PDL"><span>État du PDL <i>*</i></span><div class="opts"><label><input type="radio" name="etat" value="pose">PDL posé</label><label><input type="radio" name="etat" value="cours">PDL en cours de pose</label><label><input type="radio" name="etat" value="non">PDL non posé</label></div></div></div>
  <label id="drop" class="card"><input type="file" id="file" accept="image/*" hidden><b>📷 Choisir la photo du drone</b><br><span style="font-size:13px;color:#5b6b63">(ou glisse-la ici sur ordinateur)</span></label>
  <div id="tools" hidden>
   <div class="card bar">
@@ -65,7 +69,7 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
  <div class="card bar" id="sel" hidden></div>
 </main>
 <div id="sigModal" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="sigTitle">
- <h2 id="sigTitle">✍️ Signatures</h2><p class="sub">Signe au doigt dans le cadre. Les signatures s’ajoutent dans une bande sous la photo, sur le PNG et le PDF.</p>
+ <h2 id="sigTitle">✍️ Signatures</h2><p class="sub">Signe au doigt dans le cadre. Les deux signatures sont obligatoires pour exporter ; elles s’ajoutent dans une bande sous la photo, sur le PNG et le PDF.</p>
  <div class="sigs">
   <div class="sigb"><b>Conducteur de travaux</b><input id="sgNcond" type="text" placeholder="Nom du conducteur de travaux" autocomplete="off"><canvas id="sgPcond" width="900" height="300"></canvas><div class="row"><span>Signe dans le cadre</span><button class="btn del" type="button" data-clr="cond">Effacer</button></div></div>
   <div class="sigb"><b>Client</b><input id="sgNcli" type="text" placeholder="Nom du client" autocomplete="off"><canvas id="sgPcli" width="900" height="300"></canvas><div class="row"><span>Signe dans le cadre</span><button class="btn del" type="button" data-clr="cli">Effacer</button></div></div>
@@ -217,8 +221,19 @@ function sigClear(k){const c=$('sgP'+k);c.getContext('2d').clearRect(0,0,c.width
 function sigReset(){['cond','cli'].forEach(k=>sigClear(k));$('sgNcond').value=COND;lastCli=$('mCli').value.trim();$('sgNcli').value=lastCli;SIG.date='';sigBtn();}
 $('mCli').addEventListener('input',()=>{const v=$('mCli').value.trim(),s=$('sgNcli');if(s.value.trim()===lastCli)s.value=v;lastCli=v;});
 ['mAff','mCli'].forEach(id=>$(id).addEventListener('input',()=>$(id).classList.remove('bad')));
+// État du PDL : un choix obligatoire, affiché dans la bande du bas à l'export.
+const ETATS={pose:'PDL posé',cours:'PDL en cours de pose',non:'PDL non posé'};
+const etat=()=>{const r=document.querySelector('input[name=etat]:checked');return r?r.value:'';};
+function setEtat(v){document.querySelectorAll('input[name=etat]').forEach(r=>{r.checked=r.value===v;});$('etat').classList.remove('bad');}
+document.querySelectorAll('input[name=etat]').forEach(r=>r.addEventListener('change',()=>{$('etat').classList.remove('bad');setDirty(true);}));
 function metaOk(){let bad=null;['mAff','mCli'].forEach(id=>{const x=$(id),e=!x.value.trim();x.classList.toggle('bad',e);if(e&&!bad)bad=x;});
- if(bad){alert('Renseigne le code affaire et le nom du client avant d’exporter.');bad.scrollIntoView({behavior:'smooth',block:'center'});bad.focus();return false;}return true;}
+ if(bad){alert('Renseigne le code affaire et le nom du client avant d’exporter.');bad.scrollIntoView({behavior:'smooth',block:'center'});bad.focus();return false;}
+ if(!etat()){$('etat').classList.add('bad');alert('Coche l’état du PDL (posé, en cours de pose ou non posé) avant d’exporter.');$('etat').scrollIntoView({behavior:'smooth',block:'center'});return false;}
+ // Les deux signatures (et les noms) sont obligatoires.
+ const miss=['cond','cli'].filter(k=>!SIG[k].has||!sigName(k));
+ if(miss.length){alert('Les deux signatures sont obligatoires avant d’exporter : '+miss.map(k=>SIG[k].t.toLowerCase()+(SIG[k].has?' (nom manquant)':'')).join(' et ')+'.');$('sigModal').hidden=false;return false;}
+ if(!SIG.date){const d=new Date();SIG.date=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
+ return true;}
 function sigBtn(){$('bSig').innerHTML=sigOn()?'✍️ Signatures ✓':'✍️ Signatures';}
 ['cond','cli'].forEach(k=>{const c=$('sgP'+k),g=c.getContext('2d');let last=null;
  const at=e=>{const r=c.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*c.width,y:(e.clientY-r.top)/r.height*c.height};};
@@ -229,14 +244,22 @@ function sigBtn(){$('bSig').innerHTML=sigOn()?'✍️ Signatures ✓':'✍️ Si
 $('sigModal').addEventListener('click',e=>{const b=e.target.closest('[data-clr]');if(b){sigClear(b.dataset.clr);sigBtn();}});
 $('bSig').onclick=()=>{$('sigModal').hidden=false;};
 $('sgDone').onclick=()=>{const d=new Date();SIG.date=sigOn()?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear():'';$('sigModal').hidden=true;sigBtn();};
-const bandH=()=>Math.round(Math.max(S.W*0.16,260));
-function drawBand(ctx,y0){const W=S.W,bh=bandH(),m=bh*0.07,bw=(W-3*m)/2,h=bh-2*m,fs=h*0.1;ctx.fillStyle='#fff';ctx.fillRect(0,y0,W,bh);
+const sigH=()=>Math.round(Math.max(S.W*0.16,260)),etatH=()=>Math.round(sigH()*0.3);
+const bandH=()=>sigH()+(etat()?etatH():0);
+// Ligne « État du PDL » : les 3 choix avec une case, celle cochée en gras.
+function drawEtat(ctx,y0){const W=S.W,eh=etatH(),fs=eh*0.42,box=fs*0.95,m=sigH()*0.07,yc=y0+eh*0.58;let x=m;
+ ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillStyle='#073b2a';ctx.font='bold '+fs+'px Arial';ctx.fillText('État du PDL :',x,yc);x+=ctx.measureText('État du PDL :').width+fs*0.9;
+ Object.keys(ETATS).forEach(k=>{const on=etat()===k;ctx.strokeStyle=on?'#087a4b':'#9aa8a0';ctx.lineWidth=Math.max(2,fs*0.09);rrect(ctx,x,yc-box/2,box,box,box*0.15);ctx.stroke();
+  if(on){ctx.strokeStyle='#087a4b';ctx.lineWidth=Math.max(3,fs*0.14);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+box*0.2,yc);ctx.lineTo(x+box*0.42,yc+box*0.25);ctx.lineTo(x+box*0.82,yc-box*0.28);ctx.stroke();}
+  x+=box+fs*0.35;ctx.fillStyle=on?'#073b2a':'#5b6b63';ctx.font=(on?'bold ':'')+fs+'px Arial';ctx.fillText(ETATS[k],x,yc);x+=ctx.measureText(ETATS[k]).width+fs*1.1;});}
+function drawBand(ctx,y0){const W=S.W,bh=bandH();ctx.fillStyle='#fff';ctx.fillRect(0,y0,W,bh);if(etat()){drawEtat(ctx,y0);y0+=etatH();}
+ const sh=sigH(),m=sh*0.07,bw=(W-3*m)/2,h=sh-2*m,fs=h*0.1;
  ['cond','cli'].forEach((k,i)=>{const x=m+i*(bw+m),y=y0+m,nm=sigName(k);ctx.strokeStyle='#9aa8a0';ctx.lineWidth=Math.max(1,h*0.008);rrect(ctx,x,y,bw,h,h*0.04);ctx.stroke();
   ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle='#073b2a';ctx.font='bold '+fs+'px Arial';ctx.fillText(SIG[k].t,x+fs*0.6,y+fs*0.5,bw-fs*1.2);
   ctx.fillStyle='#17201c';ctx.font=(fs*0.85)+'px Arial';ctx.fillText(nm+(SIG.date?(nm?' — ':'')+'le '+SIG.date:''),x+fs*0.6,y+fs*1.75,bw-fs*1.2);
   if(SIG[k].has){const src=$('sgP'+k),sx=x+fs*0.6,sy=y+fs*3,sw=bw-fs*1.2,sh=h-fs*3.4,s=Math.min(sw/src.width,sh/src.height);ctx.drawImage(src,sx+(sw-src.width*s)/2,sy+(sh-src.height*s)/2,src.width*s,src.height*s);}});}
 // ---------- export ----------
-function full(){const c=document.createElement('canvas');const band=sigOn()?bandH():0;c.width=S.W;c.height=S.H+band;const g=c.getContext('2d');paint(g,false);if(band)drawBand(g,S.H);return c;}
+function full(){const c=document.createElement('canvas');const band=(sigOn()||etat())?bandH():0;c.width=S.W;c.height=S.H+band;const g=c.getContext('2d');paint(g,false);if(band)drawBand(g,S.H);return c;}
 function save(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);}
 const cleanName=s=>String(s||'').replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();
 const fname=ext=>'Longueur PDL - '+cleanName($('mAff').value)+' - '+cleanName($('mCli').value)+'.'+ext;
@@ -251,12 +274,12 @@ async function restore(d){const im=await loadImg(d.img);const s=d.s||{};
  S.img=im;S.W=im.naturalWidth;S.H=im.naturalHeight;S.name='';Object.assign(S,{local:s.local||null,pdl:s.pdl||null,bends:Array.isArray(s.bends)?s.bends:[],len:Object.assign({text:'',dx:null,dy:null},s.len||{}),texts:Array.isArray(s.texts)?s.texts:[],sel:null,mode:'',undo:[]});
  $('len').value=S.len.text||'';$('bUndo').disabled=true;if(d.aff)$('mAff').value=d.aff;if(d.cli)$('mCli').value=d.cli;sigReset();
  const g=d.sig||{};for(const k of ['cond','cli']){const x=g[k]||{};if(x.name!=null)$('sgN'+k).value=x.name;if(x.img){try{const si=await loadImg(x.img);const c=$('sgP'+k);c.getContext('2d').drawImage(si,0,0,c.width,c.height);SIG[k].has=true;}catch(e){}}}
- SIG.date=sigOn()?String(g.date||''):'';sigBtn();
+ SIG.date=sigOn()?String(g.date||''):'';sigBtn();setEtat(ETATS[d.etat]?d.etat:'');
  $('drop').hidden=true;$('tools').hidden=false;$('wrap').hidden=false;$('sel').hidden=false;$('zbar').hidden=false;fit();ui();}
 function buildData(){const s=Math.min(1,2400/Math.max(S.W,S.H)),k=v=>v==null?v:v*s;const c=document.createElement('canvas');c.width=Math.round(S.W*s);c.height=Math.round(S.H*s);c.getContext('2d').drawImage(S.img,0,0,c.width,c.height);
  const pt=m=>m?Object.assign({},m,{x:m.x*s,y:m.y*s,lx:k(m.lx),ly:k(m.ly)}):null;
  const sig={date:SIG.date};['cond','cli'].forEach(q=>{sig[q]={name:$('sgN'+q).value,img:SIG[q].has?$('sgP'+q).toDataURL('image/png'):''};});
- return {v:1,tool:'pdl',savedAt:Date.now(),aff:$('mAff').value,cli:$('mCli').value,img:c.toDataURL('image/jpeg',0.85),sig,
+ return {v:1,tool:'pdl',savedAt:Date.now(),aff:$('mAff').value,cli:$('mCli').value,etat:etat(),img:c.toDataURL('image/jpeg',0.85),sig,
   s:{local:pt(S.local),pdl:pt(S.pdl),bends:S.bends.map(b=>({x:b.x*s,y:b.y*s})),len:{text:S.len.text,dx:k(S.len.dx),dy:k(S.len.dy)},texts:S.texts.map(t=>Object.assign({},t,{x:t.x*s,y:t.y*s,ax:k(t.ax),ay:k(t.ay)}))}};}
 function outJpeg(){const f=full(),s=Math.min(1,3000/Math.max(f.width,f.height));let c=f;if(s<1){c=document.createElement('canvas');c.width=Math.round(f.width*s);c.height=Math.round(f.height*s);c.getContext('2d').drawImage(f,0,0,c.width,c.height);}return new Promise(ok=>c.toBlob(ok,'image/jpeg',0.88));}
 $('bSave').onclick=async()=>{if(!metaOk())return;const b=$('bSave');b.disabled=true;b.textContent='⏳ Enregistrement…';
