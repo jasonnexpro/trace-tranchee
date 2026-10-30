@@ -27,6 +27,15 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
 #cv{display:block;margin:0 auto;touch-action:none}
 .zoom{display:flex;gap:6px;justify-content:flex-end;align-items:center;margin:0 0 -4px}.zoom[hidden]{display:none}.zoom span{font-size:13px;font-weight:700;color:#4c5d54;margin-right:2px}
 .zoom button{width:44px;height:40px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--g);font:700 20px Arial;cursor:pointer}
+#sigModal{position:fixed;inset:0;background:rgba(10,25,18,.55);display:flex;align-items:center;justify-content:center;padding:12px;z-index:50}#sigModal[hidden]{display:none}
+#sigModal .box{background:#fff;border-radius:16px;max-width:900px;width:100%;max-height:100%;overflow:auto;padding:14px}
+#sigModal h2{margin:0 0 4px;font-size:19px;color:var(--g)}#sigModal .sub{margin:0 0 10px;font-size:13px;color:#4c5d54}
+.sigs{display:grid;grid-template-columns:1fr 1fr;gap:12px}.sigb{border:1px solid var(--line);border-radius:12px;padding:10px;background:#f7fbf9}
+.sigb b{display:block;color:var(--g);margin-bottom:6px}.sigb input{width:100%;border:1px solid #c9d8cf;border-radius:10px;padding:9px 10px;font:700 15px Arial;margin-bottom:8px}
+.sigb canvas{display:block;width:100%;aspect-ratio:3/1;background:#fff;border:2px dashed #9fc4b1;border-radius:10px;touch-action:none;cursor:crosshair}
+.sigb .row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px;color:#4c5d54}.sigb .row .btn{min-height:36px;padding:6px 12px;font-size:14px}
+#sigModal .foot{display:flex;justify-content:flex-end;margin-top:12px}
+@media(max-width:700px){.sigs{grid-template-columns:1fr}}
 .msg{padding:8px 10px;border-radius:10px;font-size:13px;margin:0;background:#fff6dd;border:1px solid #f0d48a}
 @media(max-width:700px){#wrap{height:62vh}.btn{padding:8px 11px;font-size:14px}}
 </style></head><body>
@@ -39,6 +48,7 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
    <button class="btn blue" id="bPdl" type="button">📍 PDL</button>
    <label class="len">Longueur <span class="f"><input id="len" type="text" inputmode="decimal" placeholder="ex. 250" autocomplete="off"><b>m</b></span></label>
    <button class="btn" id="bText" type="button">💬 Ajouter du texte</button>
+   <button class="btn" id="bSig" type="button">✍️ Signatures</button>
    <button class="btn" id="bUndo" type="button" disabled>↺ Annuler</button>
    <span style="flex:1"></span>
    <button class="btn main" id="bPng" type="button">⬇ PNG</button>
@@ -50,6 +60,14 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
  <div id="wrap" hidden><canvas id="cv"></canvas></div>
  <div class="card bar" id="sel" hidden></div>
 </main>
+<div id="sigModal" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="sigTitle">
+ <h2 id="sigTitle">✍️ Signatures</h2><p class="sub">Signe au doigt dans le cadre. Les signatures s’ajoutent dans une bande sous la photo, sur le PNG et le PDF.</p>
+ <div class="sigs">
+  <div class="sigb"><b>Conducteur de travaux</b><input id="sgNcond" type="text" placeholder="Nom du conducteur de travaux" autocomplete="off"><canvas id="sgPcond" width="900" height="300"></canvas><div class="row"><span>Signe dans le cadre</span><button class="btn del" type="button" data-clr="cond">Effacer</button></div></div>
+  <div class="sigb"><b>Client</b><input id="sgNcli" type="text" placeholder="Nom du client" autocomplete="off"><canvas id="sgPcli" width="900" height="300"></canvas><div class="row"><span>Signe dans le cadre</span><button class="btn del" type="button" data-clr="cli">Effacer</button></div></div>
+ </div>
+ <div class="foot"><button class="btn main" id="sgDone" type="button">✓ Terminé</button></div>
+</div></div>
 <script>
 const $=id=>document.getElementById(id);
 const COL={rouge:'#e53935',bleu:'#1e5bd8',jaune:'#e0a100',vert:'#2e9e44'};
@@ -61,9 +79,9 @@ function snap(){S.undo.push(JSON.stringify({local:S.local,pdl:S.pdl,bends:S.bend
 function undo(){const s=S.undo.pop();if(!s)return;Object.assign(S,JSON.parse(s));S.sel=null;$('len').value=S.len.text;$('bUndo').disabled=!S.undo.length;ui();draw();}
 // ---------- photo ----------
 function takeFile(f){if(!f||!/^image\//.test(f.type)){alert('Choisis une photo (JPG ou PNG).');return;}
- if(S.img&&(S.local||S.pdl||S.texts.length)&&!confirm('Changer de photo ? Le tracé en cours sera effacé.'))return;
+ if(S.img&&(S.local||S.pdl||S.texts.length||sigOn())&&!confirm('Changer de photo ? Le tracé en cours et les signatures seront effacés.'))return;
  const url=URL.createObjectURL(f);const im=new Image();im.onload=()=>{S.img=im;S.W=im.naturalWidth;S.H=im.naturalHeight;S.name=f.name.replace(/\.[^.]+$/,'');
-  Object.assign(S,{local:null,pdl:null,bends:[],len:{text:$('len').value||'',dx:null,dy:null},texts:[],sel:null,mode:'',undo:[]});$('bUndo').disabled=true;
+  Object.assign(S,{local:null,pdl:null,bends:[],len:{text:$('len').value||'',dx:null,dy:null},texts:[],sel:null,mode:'',undo:[]});$('bUndo').disabled=true;sigReset();
   $('drop').hidden=true;$('tools').hidden=false;$('wrap').hidden=false;$('sel').hidden=false;$('zbar').hidden=false;fit();ui();};im.onerror=()=>alert('Impossible de lire cette photo.');im.src=url;}
 $('file').addEventListener('change',e=>{takeFile(e.target.files[0]);e.target.value='';});
 $('bNew').onclick=()=>$('file').click();
@@ -179,14 +197,36 @@ $('sel').addEventListener('click',e=>{const a=e.target.closest('[data-a]'),c=e.t
 $('sel').addEventListener('focusin',e=>{if(e.target.tagName==='TEXTAREA')e.target._snap=false;});
 $('sel').addEventListener('input',e=>{const s=S.sel;if(!s)return;const ta=e.target;if(!ta._snap){snap();ta._snap=true;}
  if(ta.id==='selText'&&S.texts[s.i])S.texts[s.i].text=ta.value;else if(ta.id==='selMk'&&S[s.k])S[s.k].text=ta.value;draw();});
+// ---------- signatures (conducteur de travaux + client), dans une bande sous la photo à l'export ----------
+const SIG={cond:{t:'Conducteur de travaux',has:false},cli:{t:'Client',has:false},date:''};
+const sigName=k=>$('sgN'+k).value.trim();
+const sigOn=()=>['cond','cli'].some(k=>SIG[k].has||sigName(k));
+function sigClear(k){const c=$('sgP'+k);c.getContext('2d').clearRect(0,0,c.width,c.height);SIG[k].has=false;}
+function sigReset(){['cond','cli'].forEach(k=>{sigClear(k);$('sgN'+k).value='';});SIG.date='';sigBtn();}
+function sigBtn(){$('bSig').innerHTML=sigOn()?'✍️ Signatures ✓':'✍️ Signatures';}
+['cond','cli'].forEach(k=>{const c=$('sgP'+k),g=c.getContext('2d');let last=null;
+ const at=e=>{const r=c.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*c.width,y:(e.clientY-r.top)/r.height*c.height};};
+ c.addEventListener('pointerdown',e=>{try{c.setPointerCapture(e.pointerId);}catch(err){}last=at(e);g.fillStyle='#12233a';g.beginPath();g.arc(last.x,last.y,2.5,0,7);g.fill();SIG[k].has=true;e.preventDefault();});
+ c.addEventListener('pointermove',e=>{if(!last)return;const p=at(e);g.strokeStyle='#12233a';g.lineWidth=5;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(last.x,last.y);g.lineTo(p.x,p.y);g.stroke();last=p;e.preventDefault();});
+ const end=()=>{last=null;};c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
+ $('sgN'+k).addEventListener('input',sigBtn);});
+$('sigModal').addEventListener('click',e=>{const b=e.target.closest('[data-clr]');if(b){sigClear(b.dataset.clr);sigBtn();}});
+$('bSig').onclick=()=>{$('sigModal').hidden=false;};
+$('sgDone').onclick=()=>{const d=new Date();SIG.date=sigOn()?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear():'';$('sigModal').hidden=true;sigBtn();};
+const bandH=()=>Math.round(Math.max(S.W*0.16,260));
+function drawBand(ctx,y0){const W=S.W,bh=bandH(),m=bh*0.07,bw=(W-3*m)/2,h=bh-2*m,fs=h*0.1;ctx.fillStyle='#fff';ctx.fillRect(0,y0,W,bh);
+ ['cond','cli'].forEach((k,i)=>{const x=m+i*(bw+m),y=y0+m,nm=sigName(k);ctx.strokeStyle='#9aa8a0';ctx.lineWidth=Math.max(1,h*0.008);rrect(ctx,x,y,bw,h,h*0.04);ctx.stroke();
+  ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle='#073b2a';ctx.font='bold '+fs+'px Arial';ctx.fillText(SIG[k].t,x+fs*0.6,y+fs*0.5,bw-fs*1.2);
+  ctx.fillStyle='#17201c';ctx.font=(fs*0.85)+'px Arial';ctx.fillText(nm+(SIG.date?(nm?' — ':'')+'le '+SIG.date:''),x+fs*0.6,y+fs*1.75,bw-fs*1.2);
+  if(SIG[k].has){const src=$('sgP'+k),sx=x+fs*0.6,sy=y+fs*3,sw=bw-fs*1.2,sh=h-fs*3.4,s=Math.min(sw/src.width,sh/src.height);ctx.drawImage(src,sx+(sw-src.width*s)/2,sy+(sh-src.height*s)/2,src.width*s,src.height*s);}});}
 // ---------- export ----------
-function full(){const c=document.createElement('canvas');c.width=S.W;c.height=S.H;paint(c.getContext('2d'),false);return c;}
+function full(){const c=document.createElement('canvas');const band=sigOn()?bandH():0;c.width=S.W;c.height=S.H+band;const g=c.getContext('2d');paint(g,false);if(band)drawBand(g,S.H);return c;}
 function save(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);}
 const fname=ext=>'Longueur PDL - '+(S.name||'photo')+'.'+ext;
 $('bPng').onclick=()=>{const b=$('bPng');b.disabled=true;b.textContent='⏳ PNG…';setTimeout(()=>{full().toBlob(bl=>{save(bl,fname('png'));b.disabled=false;b.textContent='⬇ PNG';},'image/png');},30);};
 $('bPdf').onclick=()=>{if(!window.jspdf){alert('PDF indisponible (pas de connexion ?). Utilise le PNG.');return;}const b=$('bPdf');b.disabled=true;b.textContent='⏳ PDF…';setTimeout(()=>{try{
- const c=full();const land=S.W>=S.H;const wmm=land?297:210,hmm=wmm*S.H/S.W;const doc=new jspdf.jsPDF({orientation:land?'landscape':'portrait',unit:'mm',format:[wmm,hmm]});
+ const c=full();const land=c.width>=c.height;const wmm=land?297:210,hmm=wmm*c.height/c.width;const doc=new jspdf.jsPDF({orientation:land?'landscape':'portrait',unit:'mm',format:[wmm,hmm]});
  doc.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',0,0,wmm,hmm);save(doc.output('blob'),fname('pdf'));}catch(err){alert('PDF impossible : '+(err.message||err));}b.disabled=false;b.textContent='⬇ PDF';},30);};
-window.addEventListener('beforeunload',e=>{if(S.img&&(S.local||S.pdl||S.texts.length)){e.preventDefault();e.returnValue='';}});
+window.addEventListener('beforeunload',e=>{if(S.img&&(S.local||S.pdl||S.texts.length||sigOn())){e.preventDefault();e.returnValue='';}});
 window.__S=S;
 </script></body></html>
