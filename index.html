@@ -190,8 +190,11 @@ $('bLocal').onclick=()=>{S.mode=S.mode==='local'?'':'local';ui();};
 $('bPdl').onclick=()=>{S.mode=S.mode==='pdl'?'':'pdl';ui();};
 $('len').addEventListener('focus',()=>{$('len')._snap=false;});
 $('len').addEventListener('input',()=>{if(!$('len')._snap){snap();$('len')._snap=true;}S.len.text=$('len').value.replace(/[^\d.,]/g,'');ui();draw();});
-$('bText').onclick=()=>{snap();const w=$('wrap'),r=w.getBoundingClientRect();const cx=(w.scrollLeft+r.width/2)/S.z,cy=(w.scrollTop+r.height/2)/S.z;
- S.texts.push({x:cx,y:cy,ax:cx-120*u(),ay:cy+90*u(),text:'Texte',color:'rouge'});S.sel={k:'text',i:S.texts.length-1};ui();draw();setTimeout(()=>{const ta=$('selText');if(ta){ta.focus();ta.select();}},30);};
+$('bText').onclick=()=>{snap();const w=$('wrap'),r=w.getBoundingClientRect(),cr=$('cv').getBoundingClientRect();const cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+ /* 09/11/2026 : centre de la partie de photo visible à l'écran (la photo peut être centrée avec des bandes grises), toujours dans la photo */
+ const vx0=Math.max(r.left,cr.left),vx1=Math.min(r.right,cr.right),vy0=Math.max(r.top,cr.top),vy1=Math.min(r.bottom,cr.bottom);
+ const cx=cl(((vx0+vx1)/2-cr.left)/cr.width*S.W,S.W*0.12,S.W*0.88),cy=cl(((vy0+vy1)/2-cr.top)/cr.height*S.H,S.H*0.1,S.H*0.9);
+ S.texts.push({x:cx,y:cy,ax:cl(cx-120*u(),S.W*0.03,S.W*0.97),ay:cl(cy+90*u(),S.H*0.03,S.H*0.97),text:'Texte',color:'rouge'});S.sel={k:'text',i:S.texts.length-1};ui();draw();setTimeout(()=>{const ta=$('selText');if(ta){ta.focus();ta.select();}},30);};
 $('bUndo').onclick=undo;
 // panneau de la sélection
 function ui(){const s=S.sel,el=$('sel');let h='';
