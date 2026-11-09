@@ -276,17 +276,17 @@ async function restore(d){const im=await loadImg(d.img);const s=d.s||{};
  const g=d.sig||{};for(const k of ['cond','cli']){const x=g[k]||{};if(x.name!=null)$('sgN'+k).value=x.name;if(x.img){try{const si=await loadImg(x.img);const c=$('sgP'+k);c.getContext('2d').drawImage(si,0,0,c.width,c.height);SIG[k].has=true;}catch(e){}}}
  SIG.date=sigOn()?String(g.date||''):'';sigBtn();setEtat(ETATS[d.etat]?d.etat:'');
  $('drop').hidden=true;$('tools').hidden=false;$('wrap').hidden=false;$('sel').hidden=false;$('zbar').hidden=false;fit();ui();}
-function buildData(){const s=Math.min(1,2400/Math.max(S.W,S.H)),k=v=>v==null?v:v*s;const c=document.createElement('canvas');c.width=Math.round(S.W*s);c.height=Math.round(S.H*s);c.getContext('2d').drawImage(S.img,0,0,c.width,c.height);
+function buildData(){const s=Math.min(1,1600/Math.max(S.W,S.H)),k=v=>v==null?v:v*s;const c=document.createElement('canvas');c.width=Math.round(S.W*s);c.height=Math.round(S.H*s);c.getContext('2d').drawImage(S.img,0,0,c.width,c.height);
  const pt=m=>m?Object.assign({},m,{x:m.x*s,y:m.y*s,lx:k(m.lx),ly:k(m.ly)}):null;
  const sig={date:SIG.date};['cond','cli'].forEach(q=>{sig[q]={name:$('sgN'+q).value,img:SIG[q].has?$('sgP'+q).toDataURL('image/png'):''};});
- return {v:1,tool:'pdl',savedAt:Date.now(),aff:$('mAff').value,cli:$('mCli').value,etat:etat(),img:c.toDataURL('image/jpeg',0.85),sig,
+ return {v:1,tool:'pdl',savedAt:Date.now(),aff:$('mAff').value,cli:$('mCli').value,etat:etat(),img:c.toDataURL('image/jpeg',0.8),sig,
   s:{local:pt(S.local),pdl:pt(S.pdl),bends:S.bends.map(b=>({x:b.x*s,y:b.y*s})),len:{text:S.len.text,dx:k(S.len.dx),dy:k(S.len.dy)},texts:S.texts.map(t=>Object.assign({},t,{x:t.x*s,y:t.y*s,ax:k(t.ax),ay:k(t.ay)}))}};}
-function outJpeg(){const f=full(),s=Math.min(1,3000/Math.max(f.width,f.height));let c=f;if(s<1){c=document.createElement('canvas');c.width=Math.round(f.width*s);c.height=Math.round(f.height*s);c.getContext('2d').drawImage(f,0,0,c.width,c.height);}return new Promise(ok=>c.toBlob(ok,'image/jpeg',0.88));}
-$('bSave').onclick=async()=>{if(!metaOk())return;const b=$('bSave');b.disabled=true;b.textContent='⏳ Enregistrement…';
+function outJpeg(){const f=full(),s=Math.min(1,2000/Math.max(f.width,f.height));let c=f;if(s<1){c=document.createElement('canvas');c.width=Math.round(f.width*s);c.height=Math.round(f.height*s);c.getContext('2d').drawImage(f,0,0,c.width,c.height);}return new Promise(ok=>c.toBlob(ok,'image/jpeg',0.88));}
+$('bSave').onclick=async()=>{if(!metaOk())return;const b=$('bSave');b.disabled=true;b.textContent='⏳ Enregistrement…';const slow=setTimeout(()=>{b.textContent='⏳ Envoi en cours… connexion lente';},30000);
  try{S.sel=null;draw();const blob=await outJpeg();const data=buildData();
-  await new Promise((ok,ko)=>{pendingSave={ok,ko};toParent({type:'save',file:{name:fname('jpg'),blob},data,summary:lenText()?'Longueur '+lenText():''});setTimeout(()=>ko(new Error('le suivi ne répond pas')),180000);});
+  await new Promise((ok,ko)=>{pendingSave={ok,ko};toParent({type:'save',file:{name:fname('jpg'),blob},data,summary:lenText()?'Longueur '+lenText():''});setTimeout(()=>{const er=new Error('lent');er.lent=true;ko(er);},360000);});
   setDirty(false);
- }catch(e){alert('Pas enregistré dans le suivi : '+(e.message||e)+'\nRéessaie.');}finally{pendingSave=null;b.disabled=false;b.textContent='💾 Enregistrer dans le suivi';}};
+ }catch(e){if(e&&e.lent)alert('Connexion lente : l’envoi n’a pas été confirmé au bout de 6 minutes.\nVérifie dans le suivi si la photo est arrivée avant de réessayer, pour ne pas l’enregistrer deux fois.');else alert('Pas enregistré dans le suivi : '+(e.message||e)+'\nRéessaie.');}finally{clearTimeout(slow);pendingSave=null;b.disabled=false;b.textContent='💾 Enregistrer dans le suivi';}};
 window.addEventListener('message',e=>{if(!parentOrigin||e.source!==window.parent||e.origin!==parentOrigin)return;const d=e.data||{};if(d.sc!=='suivi'||!pendingSave)return;if(d.type==='saved')pendingSave.ok();if(d.type==='error')pendingSave.ko(new Error(d.message||'erreur inconnue'));});
 ['mAff','mCli','sgNcond','sgNcli','len'].forEach(id=>$(id).addEventListener('input',()=>setDirty(true)));
 if(Q.get('affaire'))$('mAff').value=Q.get('affaire');if(Q.get('client')){$('mCli').value=Q.get('client');sigReset();}
