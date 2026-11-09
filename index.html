@@ -297,7 +297,7 @@ if(EMBED){$('bSave').hidden=false;document.querySelector('header p').textContent
  (async()=>{const msg=await new Promise(ok=>{let n=0;const ping=()=>{try{window.parent.postMessage({sc:'tool',tool:'pdl',type:'ready'},'*');}catch(e){}};const t=setInterval(()=>{if(++n>75){clearInterval(t);window.removeEventListener('message',h);ok({timeout:true});}else ping();},400);
    function h(e){const d=e.data||{};if(e.source!==window.parent||!parentOk(e.origin)||d.sc!=='suivi'||d.type!=='load')return;parentOrigin=e.origin;clearInterval(t);window.removeEventListener('message',h);ok(d);}
    window.addEventListener('message',h);ping();});
-  if(msg.timeout){alert('Le suivi ne répond pas : ferme puis rouvre Longueur PDL depuis le point de contrôle.');return;}
+  if(msg.timeout){/* 10/11/2026 : pas relié à un suivi (ouvert depuis Outils, un raccourci ou l'historique) */$('bSave').hidden=true;document.querySelector('header p').textContent='Relevé libre : exporte en PNG ou en PDF.';const m=document.querySelector('main');if(m&&!document.getElementById('noLink'))m.insertAdjacentHTML('afterbegin','<div id="noLink" style="background:#fff4e0;color:#7a4a00;border:1px solid #f0d49a;border-radius:12px;padding:10px 14px;margin:0 0 12px;font-weight:600;line-height:1.4">⚠️ Pas relié à un suivi : tu peux exporter en PNG ou en PDF. Pour l’enregistrer dans un chantier, ouvre Longueur PDL depuis le suivi, au point « distance TGBT-PDL ».</div>');return;}
   if(msg.data&&msg.data.img){try{await restore(msg.data);}catch(e){alert('La version enregistrée dans le suivi n’a pas pu être ouverte : '+(e.message||e));}}
   else if(msg.error)alert('La version enregistrée dans le suivi n’a pas pu être ouverte ('+msg.error+').');
   dirty=true;setDirty(false);})();}
