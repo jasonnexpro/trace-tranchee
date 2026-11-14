@@ -328,6 +328,7 @@ if(EMBED){$('bSave').hidden=false;document.querySelector('header p').textContent
    function h(e){const d=e.data||{};if(e.source!==window.parent||!parentOk(e.origin)||d.sc!=='suivi'||d.type!=='load')return;parentOrigin=e.origin;clearInterval(t);window.removeEventListener('message',h);ok(d);}
    window.addEventListener('message',h);ping();});
   if(msg.timeout){/* 10/11/2026 : pas relié à un suivi (ouvert depuis Outils, un raccourci ou l'historique) */$('bSave').hidden=true;document.querySelector('header p').textContent='Relevé libre : exporte en PNG ou en PDF.';const m=document.querySelector('main');if(m&&!document.getElementById('noLink'))m.insertAdjacentHTML('afterbegin','<div id="noLink" style="background:#fff4e0;color:#7a4a00;border:1px solid #f0d49a;border-radius:12px;padding:10px 14px;margin:0 0 12px;font-weight:600;line-height:1.4">⚠️ Pas relié à un suivi : tu peux exporter en PNG ou en PDF. Pour l’enregistrer dans un chantier, ouvre Longueur PDL depuis le suivi, au point « distance TGBT-PDL ».</div>');return;}
+  if(msg.mail==='auto'){window.__autoMail=true;window.alert=function(m){toParent({type:'mailfail',title:'Mail Longueur PDL',message:String(m)});};}
   if(msg.data&&msg.data.img){try{await restore(msg.data);}catch(e){alert('La version enregistrée dans le suivi n’a pas pu être ouverte : '+(e.message||e));}}
   else if(msg.error)alert('La version enregistrée dans le suivi n’a pas pu être ouverte ('+msg.error+').');
   dirty=true;setDirty(false);try{window.__afterLoad&&window.__afterLoad(msg);}catch(e){}})();}
@@ -377,15 +378,16 @@ window.__S=S;
  function mailInfo(){return new Promise(function(ok){infoWait=ok;toParent({type:'mailinfo'});setTimeout(function(){if(infoWait===ok){infoWait=null;ok({error:'Pas de réponse du suivi (connexion ?). Réessaie.'});}},20000);});}
  function lst(a){return a.map(function(x){return '<div style="font-weight:700;word-break:break-all">'+esc2(x)+'</div>';}).join('');}
  // --- bouton « Envoyer par mail » (dans le suivi seulement) : encadré avec les adresses, puis enregistre, envoie le PDF ; le serveur met le conducteur en copie
+ window.__say=function(ti,m){if(window.__autoMail===true){toParent({type:'mailfail',title:ti,message:m});return Promise.resolve();}return mailMsg(ti,m);};
  $('bMail').onclick=async function(){
-  var _al=window.alert,okm;window.alert=function(m){mailMsg('À compléter',String(m).replace(/ avant d’exporter/,' avant d’envoyer'));};try{okm=metaOk();}finally{window.alert=_al;}
+  var AUTO=window.__autoMail===true;var _al=window.alert,okm;if(!AUTO)window.alert=function(m){mailMsg('À compléter',String(m).replace(/ avant d’exporter/,' avant d’envoyer'));};try{okm=metaOk();}finally{window.alert=_al;}
   if(!okm)return;
-  if(!window.jspdf){await mailMsg('PDF indisponible','Pas de connexion ? Impossible d’envoyer le mail pour le moment.');return;}
+  if(!window.jspdf){await __say('PDF indisponible','Pas de connexion ? Impossible d’envoyer le mail pour le moment.');return;}
   var b=$('bMail'),old=b.innerHTML;b.disabled=true;
-  var info;try{info=await mailInfo();}finally{b.disabled=false;}
-  if(!info||info.error||!info.to||!info.to.length){await mailMsg('Mail impossible',(info&&info.error)||'Aucune adresse n’est réglée pour la longueur PDL. Va dans Admin › Demandes › Longueur PDL.');return;}
+  var info;if(!AUTO){try{info=await mailInfo();}finally{b.disabled=false;}}else{b.disabled=false;info={to:['auto'],cc:[]};}
+  if(!info||info.error||!info.to||!info.to.length){await __say('Mail impossible',(info&&info.error)||'Aucune adresse n’est réglée pour la longueur PDL. Va dans Admin › Demandes › Longueur PDL.');return;}
   var cc=info.cc||[];
-  var go=await box('<b style="font-size:17px">Envoyer la longueur PDL par mail ?</b><p style="margin:10px 0 2px;color:#4c5d54">À :</p>'+lst(info.to)+'<p style="margin:10px 0 2px;color:#4c5d54">Copie :</p>'+(cc.length?lst(cc):'<div>personne</div>')+'<p style="margin:10px 0 0;font-size:13px;color:#4c5d54">Le PDF est joint. Le suivi est aussi enregistré.</p>',[{t:'Annuler',v:0},{t:'Envoyer',v:1,cls:'main'}]);
+  var go=AUTO?true:await box('<b style="font-size:17px">Envoyer la longueur PDL par mail ?</b><p style="margin:10px 0 2px;color:#4c5d54">À :</p>'+lst(info.to)+'<p style="margin:10px 0 2px;color:#4c5d54">Copie :</p>'+(cc.length?lst(cc):'<div>personne</div>')+'<p style="margin:10px 0 0;font-size:13px;color:#4c5d54">Le PDF est joint. Le suivi est aussi enregistré.</p>',[{t:'Annuler',v:0},{t:'Envoyer',v:1,cls:'main'}]);
   if(!go)return;
   b.disabled=true;b.textContent='Envoi du mail…';
   try{S.sel=null;draw();var blob=await outJpeg();var data=buildData();
@@ -394,10 +396,10 @@ window.__S=S;
    await new Promise(function(ok,ko){pendingSave={ok:ok,ko:ko};toParent({type:'save',mail:true,file:{name:fname('jpg'),blob:blob},pdf:{name:fname('pdf'),blob:pdf},etat:ETATS[etat()]||'',longueur:lenText(),data:data,summary:lenText()?'Longueur '+lenText():''});
     setTimeout(function(){var er=new Error('lent');er.lent=true;ko(er);},360000);});
    setDirty(false);
-  }catch(e){if(e&&e.lent)await mailMsg('Connexion lente','L’envoi n’a pas été confirmé au bout de 6 minutes.\nVérifie dans le suivi si la photo est arrivée avant de réessayer, pour ne pas envoyer le mail deux fois.');else await mailMsg('Pas envoyé',((e&&e.message)||e)+'\nRéessaie.');}
+  }catch(e){if(e&&e.lent)await __say('Connexion lente','L’envoi n’a pas été confirmé au bout de 6 minutes.\nVérifie dans le suivi si la photo est arrivée avant de réessayer, pour ne pas envoyer le mail deux fois.');else await __say('Pas envoyé',((e&&e.message)||e)+'\nRéessaie.');}
   finally{pendingSave=null;b.disabled=false;b.innerHTML=old;}};
  // ouvert depuis le bouton « Envoyer par mail » du suivi : l'encadré d'envoi s'ouvre tout seul une fois le relevé chargé
- window.__afterLoad=function(msg){if(!msg||!msg.mail)return;if(S.img)setTimeout(function(){$('bMail').onclick();},300);else mailMsg('Pas encore de relevé','Trace d’abord la longueur PDL et enregistre-la dans le suivi, puis reviens ici pour l’envoyer par mail.');};
+ window.__afterLoad=function(msg){if(!msg||!msg.mail)return;if(msg.mail==='auto')window.__autoMail=true;if(S.img)setTimeout(function(){$('bMail').onclick();},300);else __say('Pas encore de relevé','Trace d’abord la longueur PDL et enregistre-la dans le suivi, puis reviens ici pour l’envoyer par mail.');};
  if(window.EMBED||/[?&]embed=1/.test(location.search)){$('bMail').hidden=false;}
  metaSync();
 })();
