@@ -155,14 +155,16 @@ function drawBubble(ctx,b,col,from){const U=u()*(b.sc||1);if(b.fs)ctx.font='bold
  ctx.save();ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=8*U;ctx.shadowOffsetY=2*U;ctx.fillStyle=col;rrect(ctx,b.x,b.y,b.w,b.h,5*U);ctx.fill();ctx.restore();
  ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.textAlign='center';b.lines.forEach((l,i)=>ctx.fillText(l,b.x+b.w/2,b.y+b.pad+b.lh*(i+0.5)-2*U));}
 // étiquettes de marqueur : position par défaut (décalée en haut à droite)
+function msz(m){const a=16*u();return {hw:m.hw>0?m.hw:a,hh:m.hh>0?m.hh:a};}
+function mhp(m,sx,sy){const z=msz(m),o=16/S.z;return {x:m.x+sx*(z.hw+o),y:m.y+sy*(z.hh+o)};}
 function markerLabel(m){return {x:m.x+(m.lx??110*u()),y:m.y+(m.ly??-70*u())};}
 function lenLabel(){const m=midPath();if(!m)return null;return {x:m.x+(S.len.dx??90*u()),y:m.y+(S.len.dy??70*u())};}
 const lenText=()=>{const v=String(S.len.text||'').trim();return v?v.replace('.',',')+' m':'';};
 // ---------- dessin ----------
 function paint(ctx,withUi){const U=u();ctx.drawImage(S.img,0,0,S.W,S.H);
  const P=path();if(P.length){ctx.strokeStyle=COL.jaune;ctx.lineWidth=5*U;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();}
- const mk=(m,col,txt)=>{if(!m)return;const hs=16*U;const L=markerLabel(m);const b=bubbleBox(ctx,txt,L.x,L.y,m.sc);const st=edge(m,hs,hs,{x:b.x+b.w/2,y:b.y+b.h/2});
-  drawBubble(ctx,b,col,st);ctx.strokeStyle=col;ctx.lineWidth=4.5*U;rrect(ctx,m.x-hs,m.y-hs,2*hs,2*hs,4*U);ctx.stroke();};
+ const mk=(m,col,txt)=>{if(!m)return;const mz=msz(m),hw=mz.hw,hh=mz.hh;const L=markerLabel(m);const b=bubbleBox(ctx,txt,L.x,L.y);const st=edge(m,hw,hh,{x:b.x+b.w/2,y:b.y+b.h/2});
+  drawBubble(ctx,b,col,st);ctx.strokeStyle=col;ctx.lineWidth=4.5*U;rrect(ctx,m.x-hw,m.y-hh,2*hw,2*hh,4*U);ctx.stroke();};
  mk(S.local,COL.rouge,S.local&&S.local.text||'Local');mk(S.pdl,COL.bleu,S.pdl&&S.pdl.text||'PDL');
  const lt=lenText();if(lt&&P.length){const L=lenLabel();const b=bubbleBox(ctx,lt,L.x,L.y);const n=nearestOnPath({x:b.x+b.w/2,y:b.y+b.h/2});drawBubble(ctx,b,COL.jaune,n);}
  S.texts.forEach(t=>{const b=bubbleBox(ctx,t.text,t.x,t.y);drawBubble(ctx,b,COL[t.color]||COL.rouge,t.ax!=null?{x:t.ax,y:t.ay}:null);});
@@ -171,25 +173,25 @@ function paint(ctx,withUi){const U=u();ctx.drawImage(S.img,0,0,S.W,S.H);
  const r=9/S.z;ctx.lineWidth=2.5/S.z;
  S.bends.forEach((p,i)=>{const on=S.sel&&S.sel.k==='bend'&&S.sel.i===i;ctx.fillStyle=on?'#1d63d8':'#fff';ctx.strokeStyle='#222';ctx.beginPath();ctx.arc(p.x,p.y,on?r*1.35:r,0,7);ctx.fill();ctx.stroke();});
  S.texts.forEach((t,i)=>{if(t.ax==null)return;const on=S.sel&&S.sel.k==='text'&&S.sel.i===i;ctx.fillStyle=on?'#1d63d8':'#fff';ctx.strokeStyle='#222';ctx.beginPath();ctx.arc(t.ax,t.ay,r*0.8,0,7);ctx.fill();ctx.stroke();});
- const s=S.sel;if(s){let b=null;if(s.k==='text'){const t=S.texts[s.i];if(t)b=bubbleBox(ctx,t.text,t.x,t.y);}else if(s.k==='local'||s.k==='pdl'){const m=S[s.k];if(m){const hs=16*U;b={x:m.x-hs,y:m.y-hs,w:2*hs,h:2*hs};}}else if(s.k==='len'){const L=lenLabel();if(L)b=bubbleBox(ctx,lenText(),L.x,L.y);}
+ const s=S.sel;if(s){let b=null;if(s.k==='text'){const t=S.texts[s.i];if(t)b=bubbleBox(ctx,t.text,t.x,t.y);}else if(s.k==='local'||s.k==='pdl'){const m=S[s.k];if(m){const z=msz(m);b={x:m.x-z.hw,y:m.y-z.hh,w:2*z.hw,h:2*z.hh};}}else if(s.k==='len'){const L=lenLabel();if(L)b=bubbleBox(ctx,lenText(),L.x,L.y);}
   if(b){const g=6/S.z;ctx.setLineDash([8/S.z,5/S.z]);ctx.strokeStyle='#1d63d8';ctx.lineWidth=3/S.z;ctx.strokeRect(b.x-g,b.y-g,b.w+2*g,b.h+2*g);ctx.setLineDash([]);}if(s.k==='local'||s.k==='pdl')markerHandle(ctx,s.k);}}
 function draw(){if(!S.img)return;const c=$('cv'),ctx=c.getContext('2d');const k=S.z*c._dpr;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,c.width,c.height);ctx.setTransform(k,0,0,k,0,0);paint(ctx,true);}
 // ---------- toucher ----------
 function pt(e){const r=$('cv').getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*S.W,y:(e.clientY-r.top)/r.height*S.H};}
-function hit(p){if(S.sel&&(S.sel.k==='local'||S.sel.k==='pdl')&&S[S.sel.k]){const H=markerHandlePos(S.sel.k);if(H&&Math.hypot(p.x-H.x,p.y-H.y)<=26/S.z){const bb=H.b,cx=bb.x+bb.w/2,cy=bb.y+bb.h/2;return {k:'resize',mk:S.sel.k,sc0:S[S.sel.k].sc||1,cx,cy,d0:Math.max(1,Math.hypot(bb.x+bb.w-cx,bb.y+bb.h-cy))};}}const tol=16/S.z,c=$('cv').getContext('2d'),U=u();const inB=(b,g)=>p.x>=b.x-g&&p.x<=b.x+b.w+g&&p.y>=b.y-g&&p.y<=b.y+b.h+g;
+function hit(p){if(S.sel&&(S.sel.k==='local'||S.sel.k==='pdl')&&S[S.sel.k]){const k0=S.sel.k,m0=S[k0],z0=msz(m0);let bst=null,bd=1e9;for(const sx of [-1,1])for(const sy of [-1,1]){const h=mhp(m0,sx,sy),d=Math.hypot(p.x-h.x,p.y-h.y);if(d<bd){bd=d;bst={sx,sy};}}if(bst&&bd<=18/S.z)return {k:'resize',mk:k0,sx:bst.sx,sy:bst.sy,ox:m0.x-bst.sx*z0.hw,oy:m0.y-bst.sy*z0.hh,off:16/S.z,L0:markerLabel(m0)};}const tol=16/S.z,c=$('cv').getContext('2d'),U=u();const inB=(b,g)=>p.x>=b.x-g&&p.x<=b.x+b.w+g&&p.y>=b.y-g&&p.y<=b.y+b.h+g;
  for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];if(t.ax!=null&&Math.hypot(p.x-t.ax,p.y-t.ay)<=tol)return {k:'tip',i};}
  for(let i=S.bends.length-1;i>=0;i--)if(dist(p,S.bends[i])<=tol)return {k:'bend',i};
  for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];if(inB(bubbleBox(c,t.text,t.x,t.y),4/S.z))return {k:'text',i};}
  const lt=lenText();if(lt&&path().length){const L=lenLabel();if(inB(bubbleBox(c,lt,L.x,L.y),4/S.z))return {k:'len'};}
- for(const k of ['local','pdl']){const m=S[k];if(!m)continue;const L=markerLabel(m);if(inB(bubbleBox(c,m.text||(k==='local'?'Local':'PDL'),L.x,L.y,m.sc),4/S.z))return {k:k+'Lab'};if(Math.abs(p.x-m.x)<=16*U+tol&&Math.abs(p.y-m.y)<=16*U+tol)return {k};}
+ for(const k of ['local','pdl']){const m=S[k];if(!m)continue;const L=markerLabel(m);if(inB(bubbleBox(c,m.text||(k==='local'?'Local':'PDL'),L.x,L.y),4/S.z))return {k:k+'Lab'};{const z=msz(m);if(Math.abs(p.x-m.x)<=z.hw+tol&&Math.abs(p.y-m.y)<=z.hh+tol)return {k};}}
  const n=nearestOnPath(p);if(n&&n.d<=tol+2.5*U)return {k:'line',n};return null;}
 let drag=null,pan=null,place=null,pinch=null,hold=false;const cv=$('cv');const capt=e=>{try{cv.setPointerCapture(e.pointerId);}catch(err){}};const ptrs=new Map();
 // deux doigts : on annule le geste à un doigt commencé (et ce qu'il avait déjà changé), puis zoom + déplacement
 function cancelOne(){if(drag&&drag.snapped){const s=S.undo.pop();if(s)Object.assign(S,JSON.parse(s));$('bUndo').disabled=!S.undo.length;S.sel=null;}drag=null;pan=null;place=null;}
 function pinchInfo(){const [a,b]=[...ptrs.values()];const r=$('wrap').getBoundingClientRect();return {d:Math.hypot(a.x-b.x,a.y-b.y),cx:(a.x+b.x)/2-r.left,cy:(a.y+b.y)/2-r.top};}
-function doPinch(){const w=$('wrap'),q=pinchInfo();if(!pinch.d0)return;if(pinch.mk){const m=S[pinch.mk];if(m){m.sc=Math.round(Math.max(0.5,Math.min(3,pinch.s0*q.d/pinch.d0))*100)/100;}draw();return;}S.z=Math.max(0.03,Math.min(4,pinch.z0*q.d/pinch.d0));size();w.scrollLeft=pinch.ix*S.z-q.cx;w.scrollTop=pinch.iy*S.z-q.cy;draw();}
+function doPinch(){const w=$('wrap'),q=pinchInfo();if(!pinch.d0)return;S.z=Math.max(0.03,Math.min(4,pinch.z0*q.d/pinch.d0));size();w.scrollLeft=pinch.ix*S.z-q.cx;w.scrollTop=pinch.iy*S.z-q.cy;draw();}
 cv.addEventListener('pointerdown',e=>{if(!S.img)return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});capt(e);
- if(ptrs.size===2){cancelOne();const w=$('wrap'),q=pinchInfo();const mkp=pinchOnMarker(q);if(mkp){snap();pinch={mk:mkp,s0:(S[mkp].sc||1),d0:q.d};hold=true;ui();draw();e.preventDefault();return;}pinch={d0:q.d,z0:S.z,ix:(w.scrollLeft+q.cx)/S.z,iy:(w.scrollTop+q.cy)/S.z};hold=true;ui();draw();e.preventDefault();return;}
+ if(ptrs.size===2){cancelOne();const w=$('wrap'),q=pinchInfo();pinch={d0:q.d,z0:S.z,ix:(w.scrollLeft+q.cx)/S.z,iy:(w.scrollTop+q.cy)/S.z};hold=true;ui();draw();e.preventDefault();return;}
  if(ptrs.size>2||hold)return;const p=pt(e);
  if(S.mode==='local'||S.mode==='pdl'){place={x:e.clientX,y:e.clientY,p};e.preventDefault();return;}// posé au lever du doigt (un 2e doigt = zoom, pas de pose)
  const h=hit(p);if(!h){pan={x:e.clientX,y:e.clientY,l:$('wrap').scrollLeft,t:$('wrap').scrollTop,moved:false};capt(e);return;}
@@ -205,7 +207,7 @@ cv.addEventListener('pointermove',e=>{if(ptrs.has(e.pointerId))ptrs.set(e.pointe
  else if(k==='localLab'||k==='pdlLab'){const m=S[k.slice(0,-3)];const L=drag.L0||(drag.L0=markerLabel(m));m.lx=L.x+dx-m.x;m.ly=L.y+dy-m.y;}
  else if(k==='len'){const L=drag.L0||(drag.L0=lenLabel());const m=midPath();S.len.dx=L.x+dx-m.x;S.len.dy=L.y+dy-m.y;}
  else if(k==='text'){const t=S.texts[drag.i];const o=drag.o0||(drag.o0={x:t.x,y:t.y});t.x=o.x+dx;t.y=o.y+dy;}
- else if(k==='tip'){const t=S.texts[drag.i];t.ax=p.x;t.ay=p.y;} else if(k==='resize'){const m=S[drag.mk];if(m){const d=Math.hypot(p.x-drag.cx,p.y-drag.cy);m.sc=Math.round(Math.max(0.5,Math.min(3,drag.sc0*d/drag.d0))*100)/100;}}
+ else if(k==='tip'){const t=S.texts[drag.i];t.ax=p.x;t.ay=p.y;} else if(k==='resize'){const m=S[drag.mk];if(m){const mn=8*u();const hw=Math.max(mn,drag.sx*(p.x-drag.sx*drag.off-drag.ox)/2),hh=Math.max(mn,drag.sy*(p.y-drag.sy*drag.off-drag.oy)/2);m.hw=hw;m.hh=hh;m.x=drag.ox+drag.sx*hw;m.y=drag.oy+drag.sy*hh;m.lx=drag.L0.x-m.x;m.ly=drag.L0.y-m.y;}}
  draw();});
 function lift(e){ptrs.delete(e.pointerId);if(pinch&&ptrs.size<2)pinch=null;if(hold){if(!ptrs.size)hold=false;return true;}return false;}
 cv.addEventListener('pointercancel',e=>{lift(e);cancelOne();ptrs.clear();hold=false;pinch=null;draw();});
@@ -229,7 +231,7 @@ function ui(){const s=S.sel,el=$('sel');let h='';
  $('bLocal').classList.toggle('on',S.mode==='local');$('bPdl').classList.toggle('on',S.mode==='pdl');$('bLocal').innerHTML=(S.local?'↔ ':'📍 ')+'Local<span class="lg"> technique</span>';$('bPdl').innerHTML=(S.pdl?'↔ ':'📍 ')+'PDL';
  if(s&&s.k==='bend')h='<b style="color:#1d63d8">Angle du tracé sélectionné</b><button class="btn del" type="button" data-a="delBend">🗑 Supprimer l’angle</button>';
  else if(s&&s.k==='text'&&S.texts[s.i]){const t=S.texts[s.i];h='<textarea id="selText" rows="1" placeholder="Ton texte">'+t.text.replace(/</g,'&lt;')+'</textarea><span class="chips">'+Object.keys(COL).map(c=>'<span class="chip'+(t.color===c?' on':'')+'" data-c="'+c+'" title="'+c+'" style="background:'+COL[c]+'"></span>').join('')+'</span><button class="btn del" type="button" data-a="delText">🗑 Supprimer la bulle</button>';}
- else if(s&&(s.k==='local'||s.k==='pdl')&&S[s.k]){const m=S[s.k];h='<b style="color:'+(s.k==='local'?COL.rouge:COL.bleu)+'">'+(s.k==='local'?'Local technique':'PDL')+'</b> Texte : <textarea id="selMk" rows="1">'+(m.text||(s.k==='local'?'Local':'PDL')).replace(/</g,'&lt;')+'</textarea>'+(m.sc&&m.sc!==1?'<button class="btn" type="button" data-a="resetSc">Taille normale</button>':'')+'<button class="btn del" type="button" data-a="delMk">🗑 Retirer</button><span class="lg" style="font-size:12px;color:#4c5d54;flex:1 1 100%">Taille du cadre : tire le rond bleu à son coin, ou pince-le à deux doigts.</span>';}
+ else if(s&&(s.k==='local'||s.k==='pdl')&&S[s.k]){const m=S[s.k];h='<b style="color:'+(s.k==='local'?COL.rouge:COL.bleu)+'">'+(s.k==='local'?'Local technique':'PDL')+'</b> Texte : <textarea id="selMk" rows="1">'+(m.text||(s.k==='local'?'Local':'PDL')).replace(/</g,'&lt;')+'</textarea>'+((m.hw||m.hh)?'<button class="btn" type="button" data-a="resetSc">Taille normale</button>':'')+'<button class="btn del" type="button" data-a="delMk">🗑 Retirer</button><span class="lg" style="font-size:12px;color:#4c5d54;flex:1 1 100%">Taille du cadre : tire un des ronds bleus, aux coins.</span>';}
  else if(s&&s.k==='len')h='<b style="color:'+COL.jaune+'">Longueur</b> : tape-la dans la case « Longueur » en haut ; fais glisser la bulle pour la placer.';
  // une seule zone, de hauteur fixe : la sélection, sinon l'aide (la photo ne bouge pas)
  el.classList.toggle('hint',!h);if(h){el.innerHTML=h;}else el.innerHTML='<span>'+(S.mode==='local'?'👆 Touche la photo à l’endroit du <b>local technique</b>.':S.mode==='pdl'?'👆 Touche la photo à l’endroit du <b>PDL</b>.':
@@ -238,7 +240,7 @@ function ui(){const s=S.sel,el=$('sel');let h='';
  $('bPng').disabled=$('bPdf').disabled=!S.img;}
 $('sel').addEventListener('click',e=>{const a=e.target.closest('[data-a]'),c=e.target.closest('[data-c]');const s=S.sel;if(!s)return;
  if(c&&s.k==='text'){snap();S.texts[s.i].color=c.dataset.c;ui();draw();return;}if(!a)return;snap();
- if(a.dataset.a==='delBend')S.bends.splice(s.i,1);else if(a.dataset.a==='delText')S.texts.splice(s.i,1);else if(a.dataset.a==='resetSc'){if(S[s.k])S[s.k].sc=1;ui();draw();return;} else if(a.dataset.a==='delMk')S[s.k]=null;S.sel=null;ui();draw();});
+ if(a.dataset.a==='delBend')S.bends.splice(s.i,1);else if(a.dataset.a==='delText')S.texts.splice(s.i,1);else if(a.dataset.a==='resetSc'){if(S[s.k]){delete S[s.k].hw;delete S[s.k].hh;}ui();draw();return;} else if(a.dataset.a==='delMk')S[s.k]=null;S.sel=null;ui();draw();});
 $('sel').addEventListener('focusin',e=>{if(e.target.tagName==='TEXTAREA')e.target._snap=false;});
 $('sel').addEventListener('input',e=>{const s=S.sel;if(!s)return;const ta=e.target;if(!ta._snap){snap();ta._snap=true;}
  if(ta.id==='selText'&&S.texts[s.i])S.texts[s.i].text=ta.value;else if(ta.id==='selMk'&&S[s.k])S[s.k].text=ta.value;draw();});
@@ -308,7 +310,7 @@ async function restore(d){const im=await loadImg(d.img);const s=d.s||{};
  SIG.date=sigOn()?String(g.date||''):'';sigBtn();setEtat(ETATS[d.etat]?d.etat:'');
  $('drop').hidden=true;$('tools').hidden=false;$('wrap').hidden=false;$('sel').hidden=false;$('zbar').hidden=false;fit();ui();}
 function buildData(){const s=Math.min(1,1600/Math.max(S.W,S.H)),k=v=>v==null?v:v*s;const c=document.createElement('canvas');c.width=Math.round(S.W*s);c.height=Math.round(S.H*s);c.getContext('2d').drawImage(S.img,0,0,c.width,c.height);
- const pt=m=>m?Object.assign({},m,{x:m.x*s,y:m.y*s,lx:k(m.lx),ly:k(m.ly)}):null;
+ const pt=m=>m?Object.assign({},m,{x:m.x*s,y:m.y*s,lx:k(m.lx),ly:k(m.ly),hw:k(m.hw),hh:k(m.hh),sc:undefined}):null;
  const sig={date:SIG.date};['cond','cli'].forEach(q=>{sig[q]={name:$('sgN'+q).value,img:SIG[q].has?$('sgP'+q).toDataURL('image/png'):''};});
  return {v:1,tool:'pdl',savedAt:Date.now(),aff:$('mAff').value,cli:$('mCli').value,etat:etat(),img:c.toDataURL('image/jpeg',0.8),sig,
   s:{local:pt(S.local),pdl:pt(S.pdl),bends:S.bends.map(b=>({x:b.x*s,y:b.y*s})),len:{text:S.len.text,dx:k(S.len.dx),dy:k(S.len.dy)},texts:S.texts.map(t=>Object.assign({},t,{x:t.x*s,y:t.y*s,ax:k(t.ax),ay:k(t.ay)}))}};}
@@ -328,11 +330,11 @@ if(EMBED){$('bSave').hidden=false;document.querySelector('header p').textContent
   if(msg.timeout){/* 10/11/2026 : pas relié à un suivi (ouvert depuis Outils, un raccourci ou l'historique) */$('bSave').hidden=true;document.querySelector('header p').textContent='Relevé libre : exporte en PNG ou en PDF.';const m=document.querySelector('main');if(m&&!document.getElementById('noLink'))m.insertAdjacentHTML('afterbegin','<div id="noLink" style="background:#fff4e0;color:#7a4a00;border:1px solid #f0d49a;border-radius:12px;padding:10px 14px;margin:0 0 12px;font-weight:600;line-height:1.4">⚠️ Pas relié à un suivi : tu peux exporter en PNG ou en PDF. Pour l’enregistrer dans un chantier, ouvre Longueur PDL depuis le suivi, au point « distance TGBT-PDL ».</div>');return;}
   if(msg.data&&msg.data.img){try{await restore(msg.data);}catch(e){alert('La version enregistrée dans le suivi n’a pas pu être ouverte : '+(e.message||e));}}
   else if(msg.error)alert('La version enregistrée dans le suivi n’a pas pu être ouverte ('+msg.error+').');
-  dirty=true;setDirty(false);})();}
+  dirty=true;setDirty(false);try{window.__afterLoad&&window.__afterLoad(msg);}catch(e){}})();}
 window.addEventListener('beforeunload',e=>{if(EMBED)return;if(S.img&&(S.local||S.pdl||S.texts.length||sigOn())){e.preventDefault();e.returnValue='';}});
 window.__S=S;
 </script>
-<script id="pdl217">
+<script id="pdl217">/* V24.19.219 : cadre à 4 coins, encadré d'envoi */
 /* V24.19.217 — taille des cadres Local / PDL au doigt, envoi par mail, photo plus grande sur téléphone */
 (function(){
  var PH='(max-width:700px),(max-height:520px)';
@@ -358,33 +360,44 @@ window.__S=S;
  done.addEventListener('click',function(){forceOpen=false;metaSync();});
  ['mAff','mCli'].forEach(function(id){$(id).addEventListener('input',function(){metaSync();});});
  document.querySelectorAll('input[name=etat]').forEach(function(r){r.addEventListener('change',function(){metaSync();});});
- // --- bouton « Envoyer par mail » (dans le suivi seulement) : enregistre, envoie le PDF, le serveur met le conducteur en copie
+ // --- V24.19.219 : cadre Local / PDL = rectangle dont on tire les 4 coins (largeur et hauteur libres) ; encadré d'envoi dans la page
+ window.markerHandle=function(ctx,k){var m=S[k];if(!m)return;var z=msz(m),r=11/S.z;ctx.save();ctx.strokeStyle='#1d63d8';ctx.lineWidth=3/S.z;
+  [-1,1].forEach(function(sx){[-1,1].forEach(function(sy){var h=mhp(m,sx,sy),cx=m.x+sx*z.hw,cy=m.y+sy*z.hh;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(h.x,h.y);ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(h.x,h.y,r,0,7);ctx.fill();ctx.stroke();});});ctx.restore();};
+ var mb=null;
+ function esc2(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+ function closeBox(){if(mb){mb.remove();mb=null;}}
+ function box(html,btns){closeBox();mb=document.createElement('div');mb.id='mailBox';
+  mb.setAttribute('style','position:fixed;left:0;top:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px');
+  mb.innerHTML='<div role="dialog" aria-modal="true" style="background:#fff;color:#1c2b22;border-radius:14px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.35);font:15px/1.4 Arial,sans-serif">'+html+'<div id="mailBtns" style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap"></div></div>';
+  document.body.appendChild(mb);var bx=mb.querySelector('#mailBtns');
+  return new Promise(function(ok){btns.forEach(function(b){var e=document.createElement('button');e.type='button';e.className='btn '+(b.cls||'');e.textContent=b.t;e.setAttribute('data-mailbtn',b.t);e.onclick=function(){closeBox();ok(b.v);};bx.appendChild(e);});});}
+ window.mailMsg=function(title,text){return box('<b style="font-size:17px">'+esc2(title)+'</b><p style="margin:8px 0 0;white-space:pre-line">'+esc2(text)+'</p>',[{t:'Fermer',v:1,cls:'main'}]);};
+ var infoWait=null;
+ window.addEventListener('message',function(e){var d=e.data||{};if(!parentOrigin||e.source!==window.parent||e.origin!==parentOrigin||d.sc!=='suivi'||d.type!=='mailinfo'||!infoWait)return;var w=infoWait;infoWait=null;w(d);});
+ function mailInfo(){return new Promise(function(ok){infoWait=ok;toParent({type:'mailinfo'});setTimeout(function(){if(infoWait===ok){infoWait=null;ok({error:'Pas de réponse du suivi (connexion ?). Réessaie.'});}},20000);});}
+ function lst(a){return a.map(function(x){return '<div style="font-weight:700;word-break:break-all">'+esc2(x)+'</div>';}).join('');}
+ // --- bouton « Envoyer par mail » (dans le suivi seulement) : encadré avec les adresses, puis enregistre, envoie le PDF ; le serveur met le conducteur en copie
  $('bMail').onclick=async function(){
-  if(!metaOk())return;
-  if(!window.jspdf){alert('PDF indisponible (pas de connexion ?). Impossible d’envoyer le mail.');return;}
-  if(!confirm('Envoyer maintenant la longueur PDL par mail ?\n\nLe suivi est aussi enregistré. Le conducteur du chantier est mis en copie.'))return;
-  var b=$('bMail'),old=b.innerHTML;b.disabled=true;b.textContent='⏳ Envoi du mail…';
+  var _al=window.alert,okm;window.alert=function(m){mailMsg('À compléter',String(m).replace(/ avant d’exporter/,' avant d’envoyer'));};try{okm=metaOk();}finally{window.alert=_al;}
+  if(!okm)return;
+  if(!window.jspdf){await mailMsg('PDF indisponible','Pas de connexion ? Impossible d’envoyer le mail pour le moment.');return;}
+  var b=$('bMail'),old=b.innerHTML;b.disabled=true;
+  var info;try{info=await mailInfo();}finally{b.disabled=false;}
+  if(!info||info.error||!info.to||!info.to.length){await mailMsg('Mail impossible',(info&&info.error)||'Aucune adresse n’est réglée pour la longueur PDL. Va dans Admin › Demandes › Longueur PDL.');return;}
+  var cc=info.cc||[];
+  var go=await box('<b style="font-size:17px">Envoyer la longueur PDL par mail ?</b><p style="margin:10px 0 2px;color:#4c5d54">À :</p>'+lst(info.to)+'<p style="margin:10px 0 2px;color:#4c5d54">Copie :</p>'+(cc.length?lst(cc):'<div>personne</div>')+'<p style="margin:10px 0 0;font-size:13px;color:#4c5d54">Le PDF est joint. Le suivi est aussi enregistré.</p>',[{t:'Annuler',v:0},{t:'Envoyer',v:1,cls:'main'}]);
+  if(!go)return;
+  b.disabled=true;b.textContent='Envoi du mail…';
   try{S.sel=null;draw();var blob=await outJpeg();var data=buildData();
    var c=full(),land=c.width>=c.height,wmm=land?297:210,hmm=wmm*c.height/c.width;
    var doc=new jspdf.jsPDF({orientation:land?'landscape':'portrait',unit:'mm',format:[wmm,hmm]});doc.addImage(c.toDataURL('image/jpeg',0.9),'JPEG',0,0,wmm,hmm);var pdf=doc.output('blob');
    await new Promise(function(ok,ko){pendingSave={ok:ok,ko:ko};toParent({type:'save',mail:true,file:{name:fname('jpg'),blob:blob},pdf:{name:fname('pdf'),blob:pdf},etat:ETATS[etat()]||'',longueur:lenText(),data:data,summary:lenText()?'Longueur '+lenText():''});
     setTimeout(function(){var er=new Error('lent');er.lent=true;ko(er);},360000);});
    setDirty(false);
-  }catch(e){if(e&&e.lent)alert('Connexion lente : l’envoi n’a pas été confirmé au bout de 6 minutes.\nVérifie dans le suivi si la photo est arrivée avant de réessayer, pour ne pas envoyer le mail deux fois.');else alert('Pas envoyé : '+((e&&e.message)||e)+'\nRéessaie.');}
+  }catch(e){if(e&&e.lent)await mailMsg('Connexion lente','L’envoi n’a pas été confirmé au bout de 6 minutes.\nVérifie dans le suivi si la photo est arrivée avant de réessayer, pour ne pas envoyer le mail deux fois.');else await mailMsg('Pas envoyé',((e&&e.message)||e)+'\nRéessaie.');}
   finally{pendingSave=null;b.disabled=false;b.innerHTML=old;}};
- // --- taille des cadres au doigt : poignée ronde (dessinée sur la photo) ou pincement à deux doigts
- window.mkBox=function(ctx,k){var m=S[k];if(!m)return null;var L=markerLabel(m);return bubbleBox(ctx,m.text||(k==='local'?'Local':'PDL'),L.x,L.y,m.sc);};
- window.markerHandlePos=function(k){var b=mkBox($('cv').getContext('2d'),k);if(!b)return null;var g=6/S.z;return {x:b.x+b.w+g,y:b.y+b.h+g,b:b};};
- window.markerHandle=function(ctx,k){var H=markerHandlePos(k);if(!H)return;var b=H.b,g=6/S.z,r=14/S.z;ctx.save();
-  ctx.setLineDash([8/S.z,5/S.z]);ctx.strokeStyle='#1d63d8';ctx.lineWidth=3/S.z;ctx.strokeRect(b.x-g,b.y-g,b.w+2*g,b.h+2*g);ctx.setLineDash([]);
-  ctx.fillStyle='#fff';ctx.lineWidth=3/S.z;ctx.beginPath();ctx.arc(H.x,H.y,r,0,7);ctx.fill();ctx.stroke();
-  var a=r*0.45;ctx.lineWidth=2.6/S.z;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
-  ctx.moveTo(H.x-a,H.y-a);ctx.lineTo(H.x+a,H.y+a);ctx.moveTo(H.x+a,H.y+a-a*0.95);ctx.lineTo(H.x+a,H.y+a);ctx.lineTo(H.x+a-a*0.95,H.y+a);
-  ctx.moveTo(H.x-a,H.y-a+a*0.95);ctx.lineTo(H.x-a,H.y-a);ctx.lineTo(H.x-a+a*0.95,H.y-a);ctx.stroke();ctx.restore();};
- window.pinchOnMarker=function(q){var s=S.sel;if(!s||(s.k!=='local'&&s.k!=='pdl')||!S[s.k])return '';
-  var r=$('wrap').getBoundingClientRect(),cr=$('cv').getBoundingClientRect(),px=r.left+q.cx,py=r.top+q.cy;
-  var p={x:(px-cr.left)/cr.width*S.W,y:(py-cr.top)/cr.height*S.H},b=mkBox($('cv').getContext('2d'),s.k);if(!b)return '';var g=60/S.z;
-  return (p.x>=b.x-g&&p.x<=b.x+b.w+g&&p.y>=b.y-g&&p.y<=b.y+b.h+g)?s.k:'';};
+ // ouvert depuis le bouton « Envoyer par mail » du suivi : l'encadré d'envoi s'ouvre tout seul une fois le relevé chargé
+ window.__afterLoad=function(msg){if(!msg||!msg.mail)return;if(S.img)setTimeout(function(){$('bMail').onclick();},300);else mailMsg('Pas encore de relevé','Trace d’abord la longueur PDL et enregistre-la dans le suivi, puis reviens ici pour l’envoyer par mail.');};
  if(window.EMBED||/[?&]embed=1/.test(location.search)){$('bMail').hidden=false;}
  metaSync();
 })();
