@@ -43,6 +43,34 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
 @media(max-width:700px){.sigs{grid-template-columns:1fr}}
 .msg{padding:8px 10px;border-radius:10px;font-size:13px;margin:0;background:#fff6dd;border:1px solid #f0d48a}
 @media(max-width:700px){#wrap{height:62vh}.btn{padding:8px 11px;font-size:14px}}
+/* V24.19.217 — zoom et photo dans une scène, puis mise en page pour téléphone (portrait ou paysage) */
+#stage{display:flex;flex-direction:column;gap:10px}
+.lg{}.sh{display:none}
+#meta .sum,#meta #metaDone{display:none}
+@media (max-width:700px),(max-height:520px){
+ header{padding:7px 12px}header h1{font-size:17px}header p{display:none}
+ main{padding:0 0 8px;gap:6px}
+ #meta{border-radius:0;border-left:0;border-right:0;padding:8px 10px;gap:8px;box-shadow:none}
+ #meta.mini label,#meta.mini #etat{display:none}
+ #meta.mini .sum{display:flex;align-items:center;gap:8px;width:100%;font-weight:700;color:var(--g)}
+ #meta .sum span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #meta.open #metaDone{display:inline-flex;align-self:flex-end}
+ #drop{margin:0 12px}
+ #tools .bar{gap:6px;padding:6px 8px;border-radius:0;border-left:0;border-right:0;box-shadow:none}
+ .btn{padding:6px 10px;min-height:40px;font-size:14px}
+ .len{gap:4px}.len input{width:76px;padding:7px 8px;font-size:16px}
+ .lg{display:none}.sh{display:inline}
+ #meta label{flex:1 1 150px}#meta input[type=text]{min-height:40px;padding:7px 9px;font-size:16px}
+ #etat .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+ #etat label{flex:none;flex-direction:row;min-height:40px;padding:6px 8px;gap:6px;font-size:13px;line-height:1.15}
+ #etat input{width:18px;height:18px;flex:none}
+ #stage{position:relative;display:block}
+ #zbar{position:absolute;right:8px;top:8px;margin:0;z-index:5;background:rgba(255,255,255,.9);padding:4px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+ #zbar span{display:none}#zbar button{width:40px;height:36px;font-size:18px}
+ #wrap{border-radius:0}
+ #sel{border-radius:0;border-left:0;border-right:0;min-height:98px;padding:6px 10px;box-shadow:none;align-content:flex-start}
+ #sel textarea{min-height:38px}
+}
 </style></head><body>
 <header><h1>🚧 Longueur PDL</h1><p>Photo de drone : place le local technique, le PDL et le tracé de la tranchée, puis exporte en PDF ou PNG. La photo reste sur ton appareil.</p></header>
 <main>
@@ -51,21 +79,21 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
  <label id="drop" class="card"><input type="file" id="file" accept="image/*" hidden><b>📷 Choisir la photo du drone</b><br><span style="font-size:13px;color:#5b6b63">(ou glisse-la ici sur ordinateur)</span></label>
  <div id="tools" hidden>
   <div class="card bar">
-   <button class="btn red" id="bLocal" type="button">📍 Local technique</button>
+   <button class="btn red" id="bLocal" type="button">📍 Local<span class="lg"> technique</span></button>
    <button class="btn blue" id="bPdl" type="button">📍 PDL</button>
-   <label class="len">Longueur <span class="f"><input id="len" type="text" inputmode="decimal" placeholder="ex. 250" autocomplete="off"><b>m</b></span></label>
-   <button class="btn" id="bText" type="button">💬 Ajouter du texte</button>
+   <label class="len"><span class="lg">Longueur </span><span class="f"><input id="len" type="text" inputmode="decimal" placeholder="ex. 250" autocomplete="off"><b>m</b></span></label>
+   <button class="btn" id="bText" type="button">💬 <span class="lg">Ajouter du texte</span><span class="sh">Texte</span></button>
    <button class="btn" id="bSig" type="button">✍️ Signatures</button>
-   <button class="btn" id="bUndo" type="button" disabled>↺ Annuler</button>
+   <button class="btn" id="bUndo" type="button" disabled>↺<span class="lg"> Annuler</span></button>
    <span style="flex:1"></span>
-   <button class="btn gold" id="bSave" type="button" hidden>💾 Enregistrer dans le suivi</button>
+   <button class="btn gold" id="bSave" type="button" hidden>💾 Enregistrer<span class="lg"> dans le suivi</span></button> <button class="btn main" id="bMail" type="button" hidden>✉ <span class="lg">Envoyer par mail</span><span class="sh">Mail</span></button>
    <button class="btn main" id="bPng" type="button">⬇ PNG</button>
    <button class="btn main" id="bPdf" type="button">⬇ PDF</button>
-   <button class="btn" id="bNew" type="button" title="Changer de photo">📷 Autre photo</button>
+   <button class="btn" id="bNew" type="button" title="Changer de photo">📷<span class="lg"> Autre photo</span></button>
   </div>
  </div>
- <div id="zbar" class="zoom" hidden><span>Zoom</span><button type="button" id="zin" title="Zoomer">＋</button><button type="button" id="zout" title="Dézoomer">−</button><button type="button" id="zfit" title="Toute la photo">⤢</button></div>
- <div id="wrap" hidden><canvas id="cv"></canvas></div>
+ <div id="stage"><div id="zbar" class="zoom" hidden><span>Zoom</span><button type="button" id="zin" title="Zoomer">＋</button><button type="button" id="zout" title="Dézoomer">−</button><button type="button" id="zfit" title="Toute la photo">⤢</button></div>
+ <div id="wrap" hidden><canvas id="cv"></canvas></div></div>
  <div class="card bar" id="sel" hidden></div>
 </main>
 <div id="sigModal" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="sigTitle">
@@ -104,7 +132,7 @@ const dz=$('drop');dz.addEventListener('dragover',e=>{e.preventDefault();dz.clas
 function setZoom(z,cx,cy){const w=$('wrap');const r=w.getBoundingClientRect();cx=cx??r.width/2;cy=cy??r.height/2;const ix=(w.scrollLeft+cx)/S.z,iy=(w.scrollTop+cy)/S.z;
  S.z=Math.max(0.03,Math.min(4,z));size();w.scrollLeft=ix*S.z-cx;w.scrollTop=iy*S.z-cy;draw();}
 function fit(){const w=$('wrap');// cadre à la forme de la photo (pas de grande bande grise sur téléphone)
- w.style.height=Math.round(Math.max(240,Math.min(window.innerHeight*0.72,(w.clientWidth-4)*S.H/S.W+4)))+'px';S.z=Math.min((w.clientWidth-4)/S.W,(w.clientHeight-4)/S.H);size();w.scrollLeft=0;w.scrollTop=0;draw();}
+ try{if(window.metaSync)metaSync();}catch(e){}w.style.height=pdlWrapH(w)+'px';S.z=Math.min((w.clientWidth-4)/S.W,(w.clientHeight-4)/S.H);window.__fitZ=S.z;size();w.scrollLeft=0;w.scrollTop=0;draw();}
 function size(){const c=$('cv');const cw=S.W*S.z,ch=S.H*S.z;let dpr=window.devicePixelRatio||1;if(cw*dpr>5000||ch*dpr>5000)dpr=Math.max(1,5000/Math.max(cw,ch));
  c.style.width=cw+'px';c.style.height=ch+'px';c.width=Math.round(cw*dpr);c.height=Math.round(ch*dpr);c._dpr=dpr;
  const w=$('wrap');c.style.marginTop=Math.max(0,(w.clientHeight-ch)/2)+'px';}
@@ -119,10 +147,10 @@ function midPath(){const P=path();let L=0;for(let i=0;i<P.length-1;i++)L+=dist(P
 // point du bord d'un rectangle (centre c, demi-tailles hw/hh) dans la direction de t
 function edge(c,hw,hh,t){const dx=t.x-c.x,dy=t.y-c.y;if(!dx&&!dy)return {x:c.x,y:c.y};const k=Math.min(hw/Math.abs(dx||1e-9),hh/Math.abs(dy||1e-9));return k>=1?{x:t.x,y:t.y}:{x:c.x+dx*k,y:c.y+dy*k};}
 // ---------- bulles ----------
-function bubbleBox(ctx,text,cx,cy){const U=u();ctx.font='bold '+(22*U)+'px Arial';const lines=String(text||' ').split('\n');const lh=27*U,pad=11*U;
- const w=Math.max(...lines.map(l=>ctx.measureText(l).width))+2*pad,h=lines.length*lh+2*pad-5*U;return {x:cx-w/2,y:cy-h/2,w,h,lines,lh,pad};}
+function bubbleBox(ctx,text,cx,cy,sc){sc=sc||1;const U=u()*sc;ctx.font='bold '+(22*U)+'px Arial';const lines=String(text||' ').split('\n');const lh=27*U,pad=11*U;
+ const w=Math.max(...lines.map(l=>ctx.measureText(l).width))+2*pad,h=lines.length*lh+2*pad-5*U;return {x:cx-w/2,y:cy-h/2,w,h,lines,lh,pad,fs:22*U,sc};}
 function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-function drawBubble(ctx,b,col,from){const U=u();// from : point d'attache (le trait part de là)
+function drawBubble(ctx,b,col,from){const U=u()*(b.sc||1);if(b.fs)ctx.font='bold '+b.fs+'px Arial';// from : point d'attache (le trait part de là)
  if(from){const e=edge({x:b.x+b.w/2,y:b.y+b.h/2},b.w/2,b.h/2,from);ctx.strokeStyle=col;ctx.lineWidth=3*U;ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(e.x,e.y);ctx.stroke();}
  ctx.save();ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=8*U;ctx.shadowOffsetY=2*U;ctx.fillStyle=col;rrect(ctx,b.x,b.y,b.w,b.h,5*U);ctx.fill();ctx.restore();
  ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.textAlign='center';b.lines.forEach((l,i)=>ctx.fillText(l,b.x+b.w/2,b.y+b.pad+b.lh*(i+0.5)-2*U));}
@@ -133,7 +161,7 @@ const lenText=()=>{const v=String(S.len.text||'').trim();return v?v.replace('.',
 // ---------- dessin ----------
 function paint(ctx,withUi){const U=u();ctx.drawImage(S.img,0,0,S.W,S.H);
  const P=path();if(P.length){ctx.strokeStyle=COL.jaune;ctx.lineWidth=5*U;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();}
- const mk=(m,col,txt)=>{if(!m)return;const hs=16*U;const L=markerLabel(m);const b=bubbleBox(ctx,txt,L.x,L.y);const st=edge(m,hs,hs,{x:b.x+b.w/2,y:b.y+b.h/2});
+ const mk=(m,col,txt)=>{if(!m)return;const hs=16*U;const L=markerLabel(m);const b=bubbleBox(ctx,txt,L.x,L.y,m.sc);const st=edge(m,hs,hs,{x:b.x+b.w/2,y:b.y+b.h/2});
   drawBubble(ctx,b,col,st);ctx.strokeStyle=col;ctx.lineWidth=4.5*U;rrect(ctx,m.x-hs,m.y-hs,2*hs,2*hs,4*U);ctx.stroke();};
  mk(S.local,COL.rouge,S.local&&S.local.text||'Local');mk(S.pdl,COL.bleu,S.pdl&&S.pdl.text||'PDL');
  const lt=lenText();if(lt&&P.length){const L=lenLabel();const b=bubbleBox(ctx,lt,L.x,L.y);const n=nearestOnPath({x:b.x+b.w/2,y:b.y+b.h/2});drawBubble(ctx,b,COL.jaune,n);}
@@ -144,24 +172,24 @@ function paint(ctx,withUi){const U=u();ctx.drawImage(S.img,0,0,S.W,S.H);
  S.bends.forEach((p,i)=>{const on=S.sel&&S.sel.k==='bend'&&S.sel.i===i;ctx.fillStyle=on?'#1d63d8':'#fff';ctx.strokeStyle='#222';ctx.beginPath();ctx.arc(p.x,p.y,on?r*1.35:r,0,7);ctx.fill();ctx.stroke();});
  S.texts.forEach((t,i)=>{if(t.ax==null)return;const on=S.sel&&S.sel.k==='text'&&S.sel.i===i;ctx.fillStyle=on?'#1d63d8':'#fff';ctx.strokeStyle='#222';ctx.beginPath();ctx.arc(t.ax,t.ay,r*0.8,0,7);ctx.fill();ctx.stroke();});
  const s=S.sel;if(s){let b=null;if(s.k==='text'){const t=S.texts[s.i];if(t)b=bubbleBox(ctx,t.text,t.x,t.y);}else if(s.k==='local'||s.k==='pdl'){const m=S[s.k];if(m){const hs=16*U;b={x:m.x-hs,y:m.y-hs,w:2*hs,h:2*hs};}}else if(s.k==='len'){const L=lenLabel();if(L)b=bubbleBox(ctx,lenText(),L.x,L.y);}
-  if(b){const g=6/S.z;ctx.setLineDash([8/S.z,5/S.z]);ctx.strokeStyle='#1d63d8';ctx.lineWidth=3/S.z;ctx.strokeRect(b.x-g,b.y-g,b.w+2*g,b.h+2*g);ctx.setLineDash([]);}}}
+  if(b){const g=6/S.z;ctx.setLineDash([8/S.z,5/S.z]);ctx.strokeStyle='#1d63d8';ctx.lineWidth=3/S.z;ctx.strokeRect(b.x-g,b.y-g,b.w+2*g,b.h+2*g);ctx.setLineDash([]);}if(s.k==='local'||s.k==='pdl')markerHandle(ctx,s.k);}}
 function draw(){if(!S.img)return;const c=$('cv'),ctx=c.getContext('2d');const k=S.z*c._dpr;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,c.width,c.height);ctx.setTransform(k,0,0,k,0,0);paint(ctx,true);}
 // ---------- toucher ----------
 function pt(e){const r=$('cv').getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*S.W,y:(e.clientY-r.top)/r.height*S.H};}
-function hit(p){const tol=16/S.z,c=$('cv').getContext('2d'),U=u();const inB=(b,g)=>p.x>=b.x-g&&p.x<=b.x+b.w+g&&p.y>=b.y-g&&p.y<=b.y+b.h+g;
+function hit(p){if(S.sel&&(S.sel.k==='local'||S.sel.k==='pdl')&&S[S.sel.k]){const H=markerHandlePos(S.sel.k);if(H&&Math.hypot(p.x-H.x,p.y-H.y)<=26/S.z){const bb=H.b,cx=bb.x+bb.w/2,cy=bb.y+bb.h/2;return {k:'resize',mk:S.sel.k,sc0:S[S.sel.k].sc||1,cx,cy,d0:Math.max(1,Math.hypot(bb.x+bb.w-cx,bb.y+bb.h-cy))};}}const tol=16/S.z,c=$('cv').getContext('2d'),U=u();const inB=(b,g)=>p.x>=b.x-g&&p.x<=b.x+b.w+g&&p.y>=b.y-g&&p.y<=b.y+b.h+g;
  for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];if(t.ax!=null&&Math.hypot(p.x-t.ax,p.y-t.ay)<=tol)return {k:'tip',i};}
  for(let i=S.bends.length-1;i>=0;i--)if(dist(p,S.bends[i])<=tol)return {k:'bend',i};
  for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];if(inB(bubbleBox(c,t.text,t.x,t.y),4/S.z))return {k:'text',i};}
  const lt=lenText();if(lt&&path().length){const L=lenLabel();if(inB(bubbleBox(c,lt,L.x,L.y),4/S.z))return {k:'len'};}
- for(const k of ['local','pdl']){const m=S[k];if(!m)continue;const L=markerLabel(m);if(inB(bubbleBox(c,m.text||(k==='local'?'Local':'PDL'),L.x,L.y),4/S.z))return {k:k+'Lab'};if(Math.abs(p.x-m.x)<=16*U+tol&&Math.abs(p.y-m.y)<=16*U+tol)return {k};}
+ for(const k of ['local','pdl']){const m=S[k];if(!m)continue;const L=markerLabel(m);if(inB(bubbleBox(c,m.text||(k==='local'?'Local':'PDL'),L.x,L.y,m.sc),4/S.z))return {k:k+'Lab'};if(Math.abs(p.x-m.x)<=16*U+tol&&Math.abs(p.y-m.y)<=16*U+tol)return {k};}
  const n=nearestOnPath(p);if(n&&n.d<=tol+2.5*U)return {k:'line',n};return null;}
 let drag=null,pan=null,place=null,pinch=null,hold=false;const cv=$('cv');const capt=e=>{try{cv.setPointerCapture(e.pointerId);}catch(err){}};const ptrs=new Map();
 // deux doigts : on annule le geste à un doigt commencé (et ce qu'il avait déjà changé), puis zoom + déplacement
 function cancelOne(){if(drag&&drag.snapped){const s=S.undo.pop();if(s)Object.assign(S,JSON.parse(s));$('bUndo').disabled=!S.undo.length;S.sel=null;}drag=null;pan=null;place=null;}
 function pinchInfo(){const [a,b]=[...ptrs.values()];const r=$('wrap').getBoundingClientRect();return {d:Math.hypot(a.x-b.x,a.y-b.y),cx:(a.x+b.x)/2-r.left,cy:(a.y+b.y)/2-r.top};}
-function doPinch(){const w=$('wrap'),q=pinchInfo();if(!pinch.d0)return;S.z=Math.max(0.03,Math.min(4,pinch.z0*q.d/pinch.d0));size();w.scrollLeft=pinch.ix*S.z-q.cx;w.scrollTop=pinch.iy*S.z-q.cy;draw();}
+function doPinch(){const w=$('wrap'),q=pinchInfo();if(!pinch.d0)return;if(pinch.mk){const m=S[pinch.mk];if(m){m.sc=Math.round(Math.max(0.5,Math.min(3,pinch.s0*q.d/pinch.d0))*100)/100;}draw();return;}S.z=Math.max(0.03,Math.min(4,pinch.z0*q.d/pinch.d0));size();w.scrollLeft=pinch.ix*S.z-q.cx;w.scrollTop=pinch.iy*S.z-q.cy;draw();}
 cv.addEventListener('pointerdown',e=>{if(!S.img)return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});capt(e);
- if(ptrs.size===2){cancelOne();const w=$('wrap'),q=pinchInfo();pinch={d0:q.d,z0:S.z,ix:(w.scrollLeft+q.cx)/S.z,iy:(w.scrollTop+q.cy)/S.z};hold=true;ui();draw();e.preventDefault();return;}
+ if(ptrs.size===2){cancelOne();const w=$('wrap'),q=pinchInfo();const mkp=pinchOnMarker(q);if(mkp){snap();pinch={mk:mkp,s0:(S[mkp].sc||1),d0:q.d};hold=true;ui();draw();e.preventDefault();return;}pinch={d0:q.d,z0:S.z,ix:(w.scrollLeft+q.cx)/S.z,iy:(w.scrollTop+q.cy)/S.z};hold=true;ui();draw();e.preventDefault();return;}
  if(ptrs.size>2||hold)return;const p=pt(e);
  if(S.mode==='local'||S.mode==='pdl'){place={x:e.clientX,y:e.clientY,p};e.preventDefault();return;}// posé au lever du doigt (un 2e doigt = zoom, pas de pose)
  const h=hit(p);if(!h){pan={x:e.clientX,y:e.clientY,l:$('wrap').scrollLeft,t:$('wrap').scrollTop,moved:false};capt(e);return;}
@@ -177,14 +205,14 @@ cv.addEventListener('pointermove',e=>{if(ptrs.has(e.pointerId))ptrs.set(e.pointe
  else if(k==='localLab'||k==='pdlLab'){const m=S[k.slice(0,-3)];const L=drag.L0||(drag.L0=markerLabel(m));m.lx=L.x+dx-m.x;m.ly=L.y+dy-m.y;}
  else if(k==='len'){const L=drag.L0||(drag.L0=lenLabel());const m=midPath();S.len.dx=L.x+dx-m.x;S.len.dy=L.y+dy-m.y;}
  else if(k==='text'){const t=S.texts[drag.i];const o=drag.o0||(drag.o0={x:t.x,y:t.y});t.x=o.x+dx;t.y=o.y+dy;}
- else if(k==='tip'){const t=S.texts[drag.i];t.ax=p.x;t.ay=p.y;}
+ else if(k==='tip'){const t=S.texts[drag.i];t.ax=p.x;t.ay=p.y;} else if(k==='resize'){const m=S[drag.mk];if(m){const d=Math.hypot(p.x-drag.cx,p.y-drag.cy);m.sc=Math.round(Math.max(0.5,Math.min(3,drag.sc0*d/drag.d0))*100)/100;}}
  draw();});
 function lift(e){ptrs.delete(e.pointerId);if(pinch&&ptrs.size<2)pinch=null;if(hold){if(!ptrs.size)hold=false;return true;}return false;}
 cv.addEventListener('pointercancel',e=>{lift(e);cancelOne();ptrs.clear();hold=false;pinch=null;draw();});
 cv.addEventListener('pointerup',e=>{if(lift(e))return;
  if(place){const pl=place;place=null;if(Math.hypot(e.clientX-pl.x,e.clientY-pl.y)>10)return;snap();const k=S.mode;S[k]=Object.assign(S[k]||{},{x:pl.p.x,y:pl.p.y});S.mode='';S.sel={k};ui();draw();return;}
  if(pan){const m=pan.moved;pan=null;if(!m&&S.sel){S.sel=null;ui();draw();}return;}if(!drag)return;const d=drag;drag=null;
- if(!d.moved||d.fresh){const k=d.k==='localLab'?'local':d.k==='pdlLab'?'pdl':d.k==='tip'?'text':d.k;S.sel={k,i:d.i};}ui();draw();});
+ if(!d.moved||d.fresh){const k=d.k==='resize'?d.mk:d.k==='localLab'?'local':d.k==='pdlLab'?'pdl':d.k==='tip'?'text':d.k;S.sel={k,i:d.i};}ui();draw();});
 // ---------- boutons ----------
 $('bLocal').onclick=()=>{S.mode=S.mode==='local'?'':'local';ui();};
 $('bPdl').onclick=()=>{S.mode=S.mode==='pdl'?'':'pdl';ui();};
@@ -198,10 +226,10 @@ $('bText').onclick=()=>{snap();const w=$('wrap'),r=w.getBoundingClientRect(),cr=
 $('bUndo').onclick=undo;
 // panneau de la sélection
 function ui(){const s=S.sel,el=$('sel');let h='';
- $('bLocal').classList.toggle('on',S.mode==='local');$('bPdl').classList.toggle('on',S.mode==='pdl');$('bLocal').innerHTML=(S.local?'↔ ':'📍 ')+'Local technique';$('bPdl').innerHTML=(S.pdl?'↔ ':'📍 ')+'PDL';
+ $('bLocal').classList.toggle('on',S.mode==='local');$('bPdl').classList.toggle('on',S.mode==='pdl');$('bLocal').innerHTML=(S.local?'↔ ':'📍 ')+'Local<span class="lg"> technique</span>';$('bPdl').innerHTML=(S.pdl?'↔ ':'📍 ')+'PDL';
  if(s&&s.k==='bend')h='<b style="color:#1d63d8">Angle du tracé sélectionné</b><button class="btn del" type="button" data-a="delBend">🗑 Supprimer l’angle</button>';
  else if(s&&s.k==='text'&&S.texts[s.i]){const t=S.texts[s.i];h='<textarea id="selText" rows="1" placeholder="Ton texte">'+t.text.replace(/</g,'&lt;')+'</textarea><span class="chips">'+Object.keys(COL).map(c=>'<span class="chip'+(t.color===c?' on':'')+'" data-c="'+c+'" title="'+c+'" style="background:'+COL[c]+'"></span>').join('')+'</span><button class="btn del" type="button" data-a="delText">🗑 Supprimer la bulle</button>';}
- else if(s&&(s.k==='local'||s.k==='pdl')&&S[s.k]){const m=S[s.k];h='<b style="color:'+(s.k==='local'?COL.rouge:COL.bleu)+'">'+(s.k==='local'?'Local technique':'PDL')+'</b> Texte : <textarea id="selMk" rows="1">'+(m.text||(s.k==='local'?'Local':'PDL')).replace(/</g,'&lt;')+'</textarea><button class="btn del" type="button" data-a="delMk">🗑 Retirer</button>';}
+ else if(s&&(s.k==='local'||s.k==='pdl')&&S[s.k]){const m=S[s.k];h='<b style="color:'+(s.k==='local'?COL.rouge:COL.bleu)+'">'+(s.k==='local'?'Local technique':'PDL')+'</b> Texte : <textarea id="selMk" rows="1">'+(m.text||(s.k==='local'?'Local':'PDL')).replace(/</g,'&lt;')+'</textarea>'+(m.sc&&m.sc!==1?'<button class="btn" type="button" data-a="resetSc">Taille normale</button>':'')+'<button class="btn del" type="button" data-a="delMk">🗑 Retirer</button><span class="lg" style="font-size:12px;color:#4c5d54;flex:1 1 100%">Taille du cadre : tire le rond bleu à son coin, ou pince-le à deux doigts.</span>';}
  else if(s&&s.k==='len')h='<b style="color:'+COL.jaune+'">Longueur</b> : tape-la dans la case « Longueur » en haut ; fais glisser la bulle pour la placer.';
  // une seule zone, de hauteur fixe : la sélection, sinon l'aide (la photo ne bouge pas)
  el.classList.toggle('hint',!h);if(h){el.innerHTML=h;}else el.innerHTML='<span>'+(S.mode==='local'?'👆 Touche la photo à l’endroit du <b>local technique</b>.':S.mode==='pdl'?'👆 Touche la photo à l’endroit du <b>PDL</b>.':
@@ -210,7 +238,7 @@ function ui(){const s=S.sel,el=$('sel');let h='';
  $('bPng').disabled=$('bPdf').disabled=!S.img;}
 $('sel').addEventListener('click',e=>{const a=e.target.closest('[data-a]'),c=e.target.closest('[data-c]');const s=S.sel;if(!s)return;
  if(c&&s.k==='text'){snap();S.texts[s.i].color=c.dataset.c;ui();draw();return;}if(!a)return;snap();
- if(a.dataset.a==='delBend')S.bends.splice(s.i,1);else if(a.dataset.a==='delText')S.texts.splice(s.i,1);else if(a.dataset.a==='delMk')S[s.k]=null;S.sel=null;ui();draw();});
+ if(a.dataset.a==='delBend')S.bends.splice(s.i,1);else if(a.dataset.a==='delText')S.texts.splice(s.i,1);else if(a.dataset.a==='resetSc'){if(S[s.k])S[s.k].sc=1;ui();draw();return;} else if(a.dataset.a==='delMk')S[s.k]=null;S.sel=null;ui();draw();});
 $('sel').addEventListener('focusin',e=>{if(e.target.tagName==='TEXTAREA')e.target._snap=false;});
 $('sel').addEventListener('input',e=>{const s=S.sel;if(!s)return;const ta=e.target;if(!ta._snap){snap();ta._snap=true;}
  if(ta.id==='selText'&&S.texts[s.i])S.texts[s.i].text=ta.value;else if(ta.id==='selMk'&&S[s.k])S[s.k].text=ta.value;draw();});
@@ -289,7 +317,7 @@ $('bSave').onclick=async()=>{if(!metaOk())return;const b=$('bSave');b.disabled=t
  try{S.sel=null;draw();const blob=await outJpeg();const data=buildData();
   await new Promise((ok,ko)=>{pendingSave={ok,ko};toParent({type:'save',file:{name:fname('jpg'),blob},data,summary:lenText()?'Longueur '+lenText():''});setTimeout(()=>{const er=new Error('lent');er.lent=true;ko(er);},360000);});
   setDirty(false);
- }catch(e){if(e&&e.lent)alert('Connexion lente : l’envoi n’a pas été confirmé au bout de 6 minutes.\nVérifie dans le suivi si la photo est arrivée avant de réessayer, pour ne pas l’enregistrer deux fois.');else alert('Pas enregistré dans le suivi : '+(e.message||e)+'\nRéessaie.');}finally{clearTimeout(slow);pendingSave=null;b.disabled=false;b.textContent='💾 Enregistrer dans le suivi';}};
+ }catch(e){if(e&&e.lent)alert('Connexion lente : l’envoi n’a pas été confirmé au bout de 6 minutes.\nVérifie dans le suivi si la photo est arrivée avant de réessayer, pour ne pas l’enregistrer deux fois.');else alert('Pas enregistré dans le suivi : '+(e.message||e)+'\nRéessaie.');}finally{clearTimeout(slow);pendingSave=null;b.disabled=false;b.innerHTML='💾 Enregistrer<span class="lg"> dans le suivi</span>';}};
 window.addEventListener('message',e=>{if(!parentOrigin||e.source!==window.parent||e.origin!==parentOrigin)return;const d=e.data||{};if(d.sc!=='suivi'||!pendingSave)return;if(d.type==='saved')pendingSave.ok();if(d.type==='error')pendingSave.ko(new Error(d.message||'erreur inconnue'));});
 ['mAff','mCli','sgNcond','sgNcli','len'].forEach(id=>$(id).addEventListener('input',()=>setDirty(true)));
 if(Q.get('affaire'))$('mAff').value=Q.get('affaire');if(Q.get('client')){$('mCli').value=Q.get('client');sigReset();}
@@ -303,6 +331,63 @@ if(EMBED){$('bSave').hidden=false;document.querySelector('header p').textContent
   dirty=true;setDirty(false);})();}
 window.addEventListener('beforeunload',e=>{if(EMBED)return;if(S.img&&(S.local||S.pdl||S.texts.length||sigOn())){e.preventDefault();e.returnValue='';}});
 window.__S=S;
+</script>
+<script id="pdl217">
+/* V24.19.217 — taille des cadres Local / PDL au doigt, envoi par mail, photo plus grande sur téléphone */
+(function(){
+ var PH='(max-width:700px),(max-height:520px)';
+ function ph(){return window.matchMedia(PH).matches;}
+ // --- hauteur de la zone photo : tout le reste de l'écran sur téléphone, comme avant ailleurs
+ window.pdlWrapH=function(w){
+  if(ph()){var top=w.getBoundingClientRect().top+(window.scrollY||0),s=$('sel'),sel=(s&&!s.hidden)?(Math.max(s.offsetHeight,98)+8):0;
+   return Math.round(Math.max(260,window.innerHeight-top-sel-8));}
+  return Math.round(Math.max(240,Math.min(window.innerHeight*0.72,(w.clientWidth-4)*S.H/S.W+4)));};
+ window.relayout=function(){var w=$('wrap');if(!S.img||w.hidden)return;if(window.__fitZ&&Math.abs(S.z-window.__fitZ)<1e-6){fit();return;}w.style.height=pdlWrapH(w)+'px';size();draw();};
+ window.addEventListener('resize',function(){if(ph())relayout();});
+ window.addEventListener('orientationchange',function(){setTimeout(relayout,250);});
+ // --- infos de l'affaire : repliées en une ligne quand tout est rempli (téléphone)
+ var meta=$('meta'),sum=document.createElement('div');sum.className='sum';sum.innerHTML='<span id="metaTxt"></span><button class="btn" type="button" id="metaEdit">✏ Modifier</button>';meta.appendChild(sum);
+ var done=document.createElement('button');done.type='button';done.className='btn main';done.id='metaDone';done.textContent='✓ Terminé';meta.appendChild(done);
+ var forceOpen=false;
+ function complete(){return !!($('mAff').value.trim()&&$('mCli').value.trim()&&etat());}
+ window.metaSync=function(){var mini=ph()&&!!S.img&&complete()&&!forceOpen;
+  var changed=meta.classList.contains('mini')!==mini;meta.classList.toggle('mini',mini);meta.classList.toggle('open',ph()&&!!S.img&&forceOpen&&complete());
+  $('metaTxt').textContent=$('mAff').value.trim()+' · '+$('mCli').value.trim()+' · '+(ETATS[etat()]||'');
+  if(changed&&S.img)setTimeout(relayout,0);};
+ $('metaEdit').addEventListener('click',function(){forceOpen=true;metaSync();});
+ done.addEventListener('click',function(){forceOpen=false;metaSync();});
+ ['mAff','mCli'].forEach(function(id){$(id).addEventListener('input',function(){metaSync();});});
+ document.querySelectorAll('input[name=etat]').forEach(function(r){r.addEventListener('change',function(){metaSync();});});
+ // --- bouton « Envoyer par mail » (dans le suivi seulement) : enregistre, envoie le PDF, le serveur met le conducteur en copie
+ $('bMail').onclick=async function(){
+  if(!metaOk())return;
+  if(!window.jspdf){alert('PDF indisponible (pas de connexion ?). Impossible d’envoyer le mail.');return;}
+  if(!confirm('Envoyer maintenant la longueur PDL par mail ?\n\nLe suivi est aussi enregistré. Le conducteur du chantier est mis en copie.'))return;
+  var b=$('bMail'),old=b.innerHTML;b.disabled=true;b.textContent='⏳ Envoi du mail…';
+  try{S.sel=null;draw();var blob=await outJpeg();var data=buildData();
+   var c=full(),land=c.width>=c.height,wmm=land?297:210,hmm=wmm*c.height/c.width;
+   var doc=new jspdf.jsPDF({orientation:land?'landscape':'portrait',unit:'mm',format:[wmm,hmm]});doc.addImage(c.toDataURL('image/jpeg',0.9),'JPEG',0,0,wmm,hmm);var pdf=doc.output('blob');
+   await new Promise(function(ok,ko){pendingSave={ok:ok,ko:ko};toParent({type:'save',mail:true,file:{name:fname('jpg'),blob:blob},pdf:{name:fname('pdf'),blob:pdf},etat:ETATS[etat()]||'',longueur:lenText(),data:data,summary:lenText()?'Longueur '+lenText():''});
+    setTimeout(function(){var er=new Error('lent');er.lent=true;ko(er);},360000);});
+   setDirty(false);
+  }catch(e){if(e&&e.lent)alert('Connexion lente : l’envoi n’a pas été confirmé au bout de 6 minutes.\nVérifie dans le suivi si la photo est arrivée avant de réessayer, pour ne pas envoyer le mail deux fois.');else alert('Pas envoyé : '+((e&&e.message)||e)+'\nRéessaie.');}
+  finally{pendingSave=null;b.disabled=false;b.innerHTML=old;}};
+ // --- taille des cadres au doigt : poignée ronde (dessinée sur la photo) ou pincement à deux doigts
+ window.mkBox=function(ctx,k){var m=S[k];if(!m)return null;var L=markerLabel(m);return bubbleBox(ctx,m.text||(k==='local'?'Local':'PDL'),L.x,L.y,m.sc);};
+ window.markerHandlePos=function(k){var b=mkBox($('cv').getContext('2d'),k);if(!b)return null;var g=6/S.z;return {x:b.x+b.w+g,y:b.y+b.h+g,b:b};};
+ window.markerHandle=function(ctx,k){var H=markerHandlePos(k);if(!H)return;var b=H.b,g=6/S.z,r=14/S.z;ctx.save();
+  ctx.setLineDash([8/S.z,5/S.z]);ctx.strokeStyle='#1d63d8';ctx.lineWidth=3/S.z;ctx.strokeRect(b.x-g,b.y-g,b.w+2*g,b.h+2*g);ctx.setLineDash([]);
+  ctx.fillStyle='#fff';ctx.lineWidth=3/S.z;ctx.beginPath();ctx.arc(H.x,H.y,r,0,7);ctx.fill();ctx.stroke();
+  var a=r*0.45;ctx.lineWidth=2.6/S.z;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+  ctx.moveTo(H.x-a,H.y-a);ctx.lineTo(H.x+a,H.y+a);ctx.moveTo(H.x+a,H.y+a-a*0.95);ctx.lineTo(H.x+a,H.y+a);ctx.lineTo(H.x+a-a*0.95,H.y+a);
+  ctx.moveTo(H.x-a,H.y-a+a*0.95);ctx.lineTo(H.x-a,H.y-a);ctx.lineTo(H.x-a+a*0.95,H.y-a);ctx.stroke();ctx.restore();};
+ window.pinchOnMarker=function(q){var s=S.sel;if(!s||(s.k!=='local'&&s.k!=='pdl')||!S[s.k])return '';
+  var r=$('wrap').getBoundingClientRect(),cr=$('cv').getBoundingClientRect(),px=r.left+q.cx,py=r.top+q.cy;
+  var p={x:(px-cr.left)/cr.width*S.W,y:(py-cr.top)/cr.height*S.H},b=mkBox($('cv').getContext('2d'),s.k);if(!b)return '';var g=60/S.z;
+  return (p.x>=b.x-g&&p.x<=b.x+b.w+g&&p.y>=b.y-g&&p.y<=b.y+b.h+g)?s.k:'';};
+ if(window.EMBED||/[?&]embed=1/.test(location.search)){$('bMail').hidden=false;}
+ metaSync();
+})();
 </script>
 <!-- Dessins à la place des emojis (mêmes dessins que Suivi Chantier). Pour revenir en arrière : supprimer ce bloc. -->
 <style id="giStyle">.gi{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;background-color:currentColor;-webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat;flex:none}.gi-e{display:none!important}.gi[data-i="cable"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%225%22%20cy%3D%2218%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%2219%22%20cy%3D%226%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22M7%2018h4a3%203%200%200%200%203-3V9a3%203%200%200%201%203-3%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="cam"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M14.5%204h-5L7%207H4a2%202%200%200%200-2%202v9a2%202%200%200%200%202%202h16a2%202%200%200%200%202-2V9a2%202%200%200%200-2-2h-3z%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2213%22%20r%3D%223%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="pin"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021s-7-6.2-7-11a7%207%200%200%201%2014%200c0%204.8-7%2011-7%2011z%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2210%22%20r%3D%222.5%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="note"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2020h9%22%2F%3E%3Cpath%20d%3D%22M16.5%203.5a2.1%202.1%200%201%201%203%203L7%2019l-4%201%201-4z%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="pen"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M17%203a2.85%202.85%200%201%201%204%204L7.5%2020.5%202%2022l1.5-5.5z%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="save"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M19%2021H5a2%202%200%200%201-2-2V5a2%202%200%200%201%202-2h11l5%205v11a2%202%200%200%201-2%202z%22%2F%3E%3Cpath%20d%3D%22M17%2021v-8H7v8M7%203v5h8%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="down"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%205v14M19%2012l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="trash"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%206h18M8%206V4a2%202%200%200%201%202-2h4a2%202%200%200%201%202%202v2M19%206l-1%2014a2%202%200%200%201-2%202H8a2%202%200%200%201-2-2L5%206%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="clock"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22M12%207v5l3%202%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="warn"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%203%202%2020h20z%22%2F%3E%3Cpath%20d%3D%22M12%2010v4M12%2017h.01%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="tri"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%225%22%20width%3D%2218%22%20height%3D%2214%22%20rx%3D%221%22%2F%3E%3Cpath%20d%3D%22M3%2019%2021%205%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="file"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M14%203H7a2%202%200%200%200-2%202v14a2%202%200%200%200%202%202h10a2%202%200%200%200%202-2V8z%22%2F%3E%3Cpath%20d%3D%22M14%203v5h5M9%2013h6M9%2017h6%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="folder"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M20%2020a2%202%200%200%200%202-2V8a2%202%200%200%200-2-2h-7.9a2%202%200%200%201-1.7-.9l-.8-1.2A2%202%200%200%200%207.9%203H4a2%202%200%200%200-2%202v13a2%202%200%200%200%202%202z%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="mail"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%222%22%20y%3D%224%22%20width%3D%2220%22%20height%3D%2216%22%20rx%3D%222%22%2F%3E%3Cpath%20d%3D%22m22%206-10%207L2%206%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="clip"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%228%22%20y%3D%222%22%20width%3D%228%22%20height%3D%224%22%20rx%3D%221%22%2F%3E%3Cpath%20d%3D%22M16%204h2a2%202%200%200%201%202%202v14a2%202%200%200%201-2%202H6a2%202%200%200%201-2-2V6a2%202%200%200%201%202-2h2%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="share"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%2012v8a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2v-8%22%2F%3E%3Cpath%20d%3D%22m16%206-4-4-4%204M12%202v13%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="ruler"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2017%2017%203l4%204L7%2021z%22%2F%3E%3Cpath%20d%3D%22m7%2013%202%202M10%2010l2%202M13%207l2%202%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="star"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m12%202%203.1%206.3%206.9%201-5%204.9%201.2%206.8L12%2017.8%205.8%2021l1.2-6.8-5-4.9%206.9-1z%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="ban"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22m5.6%205.6%2012.8%2012.8%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="check"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2218%22%20height%3D%2218%22%20rx%3D%222%22%2F%3E%3Cpath%20d%3D%22m8%2012%203%203%205-6%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="link"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M10%2013a5%205%200%200%200%207.5.5l3-3a5%205%200%200%200-7-7l-1.7%201.7%22%2F%3E%3Cpath%20d%3D%22M14%2011a5%205%200%200%200-7.5-.5l-3%203a5%205%200%200%200%207%207l1.7-1.7%22%2F%3E%3C%2Fsvg%3E")}.gi[data-i="hand"]{--ic:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M22%2014a8%208%200%200%201-8%208%22%2F%3E%3Cpath%20d%3D%22M18%2011v-1a2%202%200%200%200-2-2a2%202%200%200%200-2%202%22%2F%3E%3Cpath%20d%3D%22M14%2010V9a2%202%200%200%200-2-2a2%202%200%200%200-2%202v1%22%2F%3E%3Cpath%20d%3D%22M10%209.5V4a2%202%200%200%200-2-2a2%202%200%200%200-2%202v10%22%2F%3E%3Cpath%20d%3D%22M18%2011a2%202%200%201%201%204%200v3a8%208%200%200%201-8%208h-2c-2.8%200-4.5-.86-5.99-2.34l-3.6-3.6a2%202%200%200%201%202.83-2.82L7%2015%22%2F%3E%3C%2Fsvg%3E")}</style>
