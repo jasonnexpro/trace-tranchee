@@ -122,6 +122,22 @@ body:has(#tools:not([hidden])){padding-bottom:0}
 }
 #pelle .opts label{flex-direction:row!important;align-items:center!important;height:32px!important;min-height:32px!important;width:auto!important;padding:0 14px 0 10px!important;gap:6px!important;white-space:nowrap}
 #pelle .opts{align-items:center}
+#zbar button.w{width:auto;padding:0 12px;font:700 14px Arial,sans-serif;display:inline-flex;align-items:center;gap:6px}
+#pfBtns{display:none}
+/* plein écran : seule la photo reste, outils dans un panneau qu'on ouvre avec « Outils » */
+html.pf body{overflow:hidden;padding-bottom:0!important}
+html.pf header,html.pf #meta,html.pf #soloNote,html.pf #zbar,html.pf #drop{display:none!important}
+html.pf main{padding:0;gap:0}
+html.pf #stage{margin:0}
+html.pf #wrap{border-radius:0}
+html.pf #tools .bar{display:none;position:fixed;top:0;left:0;right:0;z-index:40;max-height:60vh;overflow:auto;flex-wrap:wrap;border-radius:0;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+html.pf.tb #tools .bar{display:flex}
+html.pf .g-act{position:static;box-shadow:none;border:0;padding:0;background:none;margin-left:auto;z-index:auto;flex-wrap:wrap}
+html.pf .g-act .btn{flex:0 0 auto}
+html.pf #bInfo{display:none}
+html.pf #sel{position:fixed;left:6px;right:150px;bottom:6px;z-index:25;padding:3px 8px;font-size:12px;min-height:0!important;height:auto!important;max-height:44px;overflow:auto}
+html.pf #pfBtns{display:flex;position:fixed;right:8px;bottom:8px;z-index:45;gap:6px}
+#pfBtns .btn{min-height:38px;padding:4px 12px;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
 </style></head><body>
 <header><h1>🚧 Longueur PDL</h1><p>Photo de drone : place le local technique, le PDL et le tracé de la tranchée, puis exporte en PDF ou PNG. La photo reste sur ton appareil.</p></header>
 <main>
@@ -143,7 +159,7 @@ body:has(#tools:not([hidden])){padding-bottom:0}
    <button class="btn" id="bNew" type="button" title="Changer de photo">📷<span class="lg"> Autre photo</span></button>
   </div>
  </div>
- <div id="stage"><div id="zbar" class="zoom" hidden><span>Zoom</span><button type="button" id="zin" title="Zoomer">＋</button><button type="button" id="zout" title="Dézoomer">−</button><button type="button" id="zfit" title="Toute la photo">⤢</button></div>
+ <div id="stage"><div id="zbar" class="zoom" hidden><button type="button" id="zin" hidden>＋</button><button type="button" id="zout" hidden>−</button><button type="button" id="zfit" class="w" title="Toute la photo">Ajuster</button><button type="button" id="zfull" class="w" title="Photo en plein écran"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Plein écran</button></div>
  <div id="wrap" hidden><canvas id="cv"></canvas></div></div>
  <div class="card bar" id="sel" hidden></div>
 </main>
@@ -479,7 +495,18 @@ window.__S=S;
  // la photo occupe le reste de l'écran, au-dessus de la barre d'envoi fixée en bas
  var o=window.pdlWrapH;
  var FS='(orientation:landscape) and (max-height:520px)';
- if(typeof o==='function')window.pdlWrapH=function(w){var h=o(w);if(window.matchMedia(FS).matches){var tp=w.getBoundingClientRect().top+(window.scrollY||0);return Math.round(Math.max(200,window.innerHeight-tp-4));}if(ph()){var a=document.getElementById('barAct');if(a&&getComputedStyle(a).position==='fixed')h-=a.offsetHeight+4;}return Math.round(Math.max(240,h));};
+ var root=document.documentElement,usedApi=false;
+ var pfb=document.createElement('div');pfb.id='pfBtns';pfb.innerHTML='<button type="button" class="btn" id="pfTools">Outils</button><button type="button" class="btn main" id="pfExit">Quitter</button>';document.body.appendChild(pfb);
+ function pfRelay(){setTimeout(function(){window.scrollTo(0,0);try{fit();}catch(e){}},200);}
+ function pfOn(){root.classList.add('pf');root.classList.remove('tb');usedApi=false;try{var r=root.requestFullscreen&&root.requestFullscreen();if(r&&r.then){usedApi=true;r.catch(function(){usedApi=false;});}}catch(e){}pfRelay();}
+ function pfOff(){root.classList.remove('pf','tb');try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen();}catch(e){}usedApi=false;pfRelay();}
+ window.__pf=function(){return root.classList.contains('pf');};
+ document.getElementById('zfull').onclick=pfOn;document.getElementById('pfExit').onclick=pfOff;
+ document.getElementById('pfTools').onclick=function(){root.classList.toggle('tb');pfRelay();};
+ document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement&&usedApi&&root.classList.contains('pf'))pfOff();else if(root.classList.contains('pf'))pfRelay();});
+ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&root.classList.contains('pf'))pfOff();});
+ window.addEventListener('resize',function(){if(root.classList.contains('pf'))pfRelay();});
+ if(typeof o==='function')window.pdlWrapH=function(w){var h=o(w);if(root.classList.contains('pf')){var tq=w.getBoundingClientRect().top+(window.scrollY||0);return Math.round(Math.max(200,window.innerHeight-tq));}if(window.matchMedia(FS).matches){var tp=w.getBoundingClientRect().top+(window.scrollY||0);return Math.round(Math.max(200,window.innerHeight-tp-4));}if(ph()){var a=document.getElementById('barAct');if(a&&getComputedStyle(a).position==='fixed')h-=a.offsetHeight+4;}return Math.round(Math.max(240,h));};
  // le suivi répond après les 30 secondes d'attente : on se relie quand même (boutons « Enregistrer » et « Mail », relevé enregistré)
  window.__lateLoad=async function(d){window.__tlate=false;var n=document.getElementById('noLink');if(n)n.remove();$('bSave').hidden=false;var hp=document.querySelector('header p');if(hp)hp.textContent='Relevé du suivi : touche « Enregistrer dans le suivi » quand tu as fini.';
   if(d.mail==='auto')window.__autoMail=true;
