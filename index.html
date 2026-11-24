@@ -71,11 +71,44 @@ main{max-width:1500px;margin:0 auto;padding:12px;display:flex;flex-direction:col
  #sel{border-radius:0;border-left:0;border-right:0;min-height:98px;padding:6px 10px;box-shadow:none;align-content:flex-start}
  #sel textarea{min-height:38px}
 }
+/* V24.19.240 — [hidden] respecté partout (les boutons « Enregistrer » et « Mail » n'apparaissent plus quand l'outil est ouvert seul) ; question « pelleteuse » ; mise en page en groupes */
+[hidden]{display:none!important}
+header{padding:10px 16px}
+#meta{display:grid;grid-template-columns:minmax(110px,1fr) minmax(170px,2fr) minmax(300px,3fr) minmax(170px,1.3fr);gap:10px 14px;align-items:start}
+#meta label{flex:none}
+#etat,#pelle{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:13px;color:var(--g)}
+#pelle small{font-weight:400;color:#6a7a71}
+#pelle .opts{display:flex;gap:8px;flex-wrap:wrap}
+#pelle label{flex:1 1 90px;display:flex;align-items:center;gap:8px;border:1px solid #c9d8cf;border-radius:10px;padding:8px 10px;min-height:44px;font:700 15px Arial,sans-serif;color:#17201c;cursor:pointer;background:#fff}
+#pelle label:has(input:checked){border:2px solid var(--g2);background:#e9f6ef}
+#pelle input{width:20px;height:20px;margin:0;accent-color:var(--g2)}
+#pelle.bad .opts label{border:2px solid var(--red);background:#fff1f0}
+@media (max-width:1000px){#meta{grid-template-columns:minmax(110px,1fr) minmax(170px,2fr)}#etat,#pelle{grid-column:1/-1}}
+.grp{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#tools .bar{gap:8px 16px}
+.g-act{margin-left:auto}
+@media (min-width:701px) and (max-width:1400px){#tools .bar .lg{display:none}#tools .bar .sh{display:inline}}
+#soloNote{margin:0;font-size:12.5px;color:#4c5d54;padding:0 4px}
+@media (max-width:700px),(max-height:520px){
+#meta{display:flex;flex-wrap:wrap}
+#pelle{flex:1 1 100%}
+#pelle .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+#pelle label{flex:none;min-height:40px;padding:6px 8px;font-size:14px;gap:6px}
+#pelle input{width:18px;height:18px;flex:none}
+#meta.mini #pelle{display:none}
+#tools .bar{gap:6px}
+.grp{gap:6px}
+.g-place,.g-edit{flex:1 1 100%}
+.g-act{position:fixed;left:0;right:0;bottom:0;margin:0;z-index:30;flex-wrap:nowrap;gap:6px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.14)}
+.g-act .btn{flex:1 1 0;min-width:0;justify-content:center;padding:6px 2px;font-size:12px;gap:3px;white-space:nowrap}.g-act .btn svg,.g-act .btn .sc-ic{width:16px;height:16px;flex:none}
+body:has(#tools:not([hidden])){padding-bottom:70px}
+#soloNote{padding:2px 10px 0;font-size:12px}
+}
 </style></head><body>
 <header><h1>🚧 Longueur PDL</h1><p>Photo de drone : place le local technique, le PDL et le tracé de la tranchée, puis exporte en PDF ou PNG. La photo reste sur ton appareil.</p></header>
 <main>
  <div id="meta" class="card"><label><span>Code affaire <i>*</i></span><input id="mAff" type="text" placeholder="ex. 13356" autocomplete="off"></label><label><span>Nom du client <i>*</i></span><input id="mCli" type="text" placeholder="ex. DUPONT Jean" autocomplete="off"></label>
-  <div id="etat" role="radiogroup" aria-label="État du PDL"><span>État du PDL <i>*</i></span><div class="opts"><label><input type="radio" name="etat" value="pose">PDL posé</label><label><input type="radio" name="etat" value="cours">PDL en cours de pose</label><label><input type="radio" name="etat" value="non">PDL non posé</label></div></div></div>
+  <div id="etat" role="radiogroup" aria-label="État du PDL"><span>État du PDL <i>*</i></span><div class="opts"><label><input type="radio" name="etat" value="pose">PDL posé</label><label><input type="radio" name="etat" value="cours">PDL en cours de pose</label><label><input type="radio" name="etat" value="non">PDL non posé</label></div></div><div id="pelle" role="radiogroup" aria-label="Pelleteuse"><span>Le client a-t-il une pelleteuse ? <small>(indiqué dans le mail)</small></span><div class="opts"><label><input type="radio" name="pelle" value="oui">Oui</label><label><input type="radio" name="pelle" value="non">Non</label></div></div></div>
  <label id="drop" class="card"><input type="file" id="file" accept="image/*" hidden><b>📷 Choisir la photo du drone</b><br><span style="font-size:13px;color:#5b6b63">(ou glisse-la ici sur ordinateur)</span></label>
  <div id="tools" hidden>
   <div class="card bar">
@@ -259,6 +292,11 @@ const ETATS={pose:'PDL posé',cours:'PDL en cours de pose',non:'PDL non posé'};
 const etat=()=>{const r=document.querySelector('input[name=etat]:checked');return r?r.value:'';};
 function setEtat(v){document.querySelectorAll('input[name=etat]').forEach(r=>{r.checked=r.value===v;});$('etat').classList.remove('bad');}
 document.querySelectorAll('input[name=etat]').forEach(r=>r.addEventListener('change',()=>{$('etat').classList.remove('bad');setDirty(true);}));
+// Pelleteuse du client (oui / non) : pas sur l'image, seulement dans le corps du mail ; gardée dans le relevé.
+const PELLES={oui:'Oui',non:'Non'};
+const pelleVal=()=>{const r=document.querySelector('input[name=pelle]:checked');return r?r.value:'';};
+function setPelle(v){document.querySelectorAll('input[name=pelle]').forEach(r=>{r.checked=r.value===v;});$('pelle').classList.remove('bad');}
+document.querySelectorAll('input[name=pelle]').forEach(r=>r.addEventListener('change',()=>{$('pelle').classList.remove('bad');setDirty(true);}));
 function metaOk(){let bad=null;['mAff','mCli'].forEach(id=>{const x=$(id),e=!x.value.trim();x.classList.toggle('bad',e);if(e&&!bad)bad=x;});
  if(bad){alert('Renseigne le code affaire et le nom du client avant d’exporter.');bad.scrollIntoView({behavior:'smooth',block:'center'});bad.focus();return false;}
  if(!etat()){$('etat').classList.add('bad');alert('Coche l’état du PDL (posé, en cours de pose ou non posé) avant d’exporter.');$('etat').scrollIntoView({behavior:'smooth',block:'center'});return false;}
@@ -307,12 +345,12 @@ async function restore(d){const im=await loadImg(d.img);const s=d.s||{};
  S.img=im;S.W=im.naturalWidth;S.H=im.naturalHeight;S.name='';Object.assign(S,{local:s.local||null,pdl:s.pdl||null,bends:Array.isArray(s.bends)?s.bends:[],len:Object.assign({text:'',dx:null,dy:null},s.len||{}),texts:Array.isArray(s.texts)?s.texts:[],sel:null,mode:'',undo:[]});
  $('len').value=S.len.text||'';$('bUndo').disabled=true;if(d.aff)$('mAff').value=d.aff;if(d.cli)$('mCli').value=d.cli;sigReset();
  const g=d.sig||{};for(const k of ['cond','cli']){const x=g[k]||{};if(x.name!=null)$('sgN'+k).value=x.name;if(x.img){try{const si=await loadImg(x.img);const c=$('sgP'+k);c.getContext('2d').drawImage(si,0,0,c.width,c.height);SIG[k].has=true;}catch(e){}}}
- SIG.date=sigOn()?String(g.date||''):'';sigBtn();setEtat(ETATS[d.etat]?d.etat:'');
+ SIG.date=sigOn()?String(g.date||''):'';sigBtn();setEtat(ETATS[d.etat]?d.etat:'');setPelle(PELLES[d.pelle]?d.pelle:'');
  $('drop').hidden=true;$('tools').hidden=false;$('wrap').hidden=false;$('sel').hidden=false;$('zbar').hidden=false;fit();ui();}
 function buildData(){const s=Math.min(1,1600/Math.max(S.W,S.H)),k=v=>v==null?v:v*s;const c=document.createElement('canvas');c.width=Math.round(S.W*s);c.height=Math.round(S.H*s);c.getContext('2d').drawImage(S.img,0,0,c.width,c.height);
  const pt=m=>m?Object.assign({},m,{x:m.x*s,y:m.y*s,lx:k(m.lx),ly:k(m.ly),hw:k(m.hw),hh:k(m.hh),sc:undefined}):null;
  const sig={date:SIG.date};['cond','cli'].forEach(q=>{sig[q]={name:$('sgN'+q).value,img:SIG[q].has?$('sgP'+q).toDataURL('image/png'):''};});
- return {v:1,tool:'pdl',savedAt:Date.now(),aff:$('mAff').value,cli:$('mCli').value,etat:etat(),img:c.toDataURL('image/jpeg',0.8),sig,
+ return {v:1,tool:'pdl',savedAt:Date.now(),aff:$('mAff').value,cli:$('mCli').value,etat:etat(),pelle:pelleVal(),img:c.toDataURL('image/jpeg',0.8),sig,
   s:{local:pt(S.local),pdl:pt(S.pdl),bends:S.bends.map(b=>({x:b.x*s,y:b.y*s})),len:{text:S.len.text,dx:k(S.len.dx),dy:k(S.len.dy)},texts:S.texts.map(t=>Object.assign({},t,{x:t.x*s,y:t.y*s,ax:k(t.ax),ay:k(t.ay)}))}};}
 function outJpeg(){const f=full(),s=Math.min(1,2000/Math.max(f.width,f.height));let c=f;if(s<1){c=document.createElement('canvas');c.width=Math.round(f.width*s);c.height=Math.round(f.height*s);c.getContext('2d').drawImage(f,0,0,c.width,c.height);}return new Promise(ok=>c.toBlob(ok,'image/jpeg',0.88));}
 $('bSave').onclick=async()=>{if(!metaOk())return;const b=$('bSave');b.disabled=true;b.textContent='⏳ Enregistrement…';const slow=setTimeout(()=>{b.textContent='⏳ Envoi en cours… connexion lente';},30000);
@@ -324,8 +362,8 @@ window.addEventListener('message',e=>{if(!parentOrigin||e.source!==window.parent
 ['mAff','mCli','sgNcond','sgNcli','len'].forEach(id=>$(id).addEventListener('input',()=>setDirty(true)));
 if(Q.get('affaire'))$('mAff').value=Q.get('affaire');if(Q.get('client')){$('mCli').value=Q.get('client');sigReset();}
 if(EMBED){$('bSave').hidden=false;document.querySelector('header p').textContent='Relevé du suivi : touche « 💾 Enregistrer dans le suivi » quand tu as fini.';
- (async()=>{const msg=await new Promise(ok=>{let n=0;const ping=()=>{try{window.parent.postMessage({sc:'tool',tool:'pdl',type:'ready'},'*');}catch(e){}};const t=setInterval(()=>{if(++n>75){clearInterval(t);window.removeEventListener('message',h);ok({timeout:true});}else ping();},400);
-   function h(e){const d=e.data||{};if(e.source!==window.parent||!parentOk(e.origin)||d.sc!=='suivi'||d.type!=='load')return;parentOrigin=e.origin;clearInterval(t);window.removeEventListener('message',h);ok(d);}
+ (async()=>{const msg=await new Promise(ok=>{let n=0;const ping=()=>{try{window.parent.postMessage({sc:'tool',tool:'pdl',type:'ready'},'*');}catch(e){}};const t=setInterval(()=>{if(++n>75){clearInterval(t);window.__tlate=true;ok({timeout:true});}else ping();},400);
+   function h(e){const d=e.data||{};if(e.source!==window.parent||!parentOk(e.origin)||d.sc!=='suivi'||d.type!=='load')return;parentOrigin=e.origin;clearInterval(t);window.removeEventListener('message',h);ok(d);if(window.__tlate&&window.__lateLoad)window.__lateLoad(d);}
    window.addEventListener('message',h);ping();});
   if(msg.timeout){/* 10/11/2026 : pas relié à un suivi (ouvert depuis Outils, un raccourci ou l'historique) */$('bSave').hidden=true;document.querySelector('header p').textContent='Relevé libre : exporte en PNG ou en PDF.';const m=document.querySelector('main');if(m&&!document.getElementById('noLink'))m.insertAdjacentHTML('afterbegin','<div id="noLink" style="background:#fff4e0;color:#7a4a00;border:1px solid #f0d49a;border-radius:12px;padding:10px 14px;margin:0 0 12px;font-weight:600;line-height:1.4">⚠️ Pas relié à un suivi : tu peux exporter en PNG ou en PDF. Pour l’enregistrer dans un chantier, ouvre Longueur PDL depuis le suivi, au point « distance TGBT-PDL ».</div>');return;}
   if(msg.mail==='auto'){window.__autoMail=true;window.alert=function(m){toParent({type:'mailfail',title:'Mail Longueur PDL',message:String(m)});};}
@@ -352,15 +390,15 @@ window.__S=S;
  var meta=$('meta'),sum=document.createElement('div');sum.className='sum';sum.innerHTML='<span id="metaTxt"></span><button class="btn" type="button" id="metaEdit">✏ Modifier</button>';meta.appendChild(sum);
  var done=document.createElement('button');done.type='button';done.className='btn main';done.id='metaDone';done.textContent='✓ Terminé';meta.appendChild(done);
  var forceOpen=false;
- function complete(){return !!($('mAff').value.trim()&&$('mCli').value.trim()&&etat());}
+ function complete(){return !!($('mAff').value.trim()&&$('mCli').value.trim()&&etat()&&pelleVal());}
  window.metaSync=function(){var mini=ph()&&!!S.img&&complete()&&!forceOpen;
   var changed=meta.classList.contains('mini')!==mini;meta.classList.toggle('mini',mini);meta.classList.toggle('open',ph()&&!!S.img&&forceOpen&&complete());
-  $('metaTxt').textContent=$('mAff').value.trim()+' · '+$('mCli').value.trim()+' · '+(ETATS[etat()]||'');
+  $('metaTxt').textContent=$('mAff').value.trim()+' · '+$('mCli').value.trim()+' · '+(ETATS[etat()]||'')+(pelleVal()?' · Pelleteuse : '+(pelleVal()==='oui'?'oui':'non'):'');
   if(changed&&S.img)setTimeout(relayout,0);};
  $('metaEdit').addEventListener('click',function(){forceOpen=true;metaSync();});
  done.addEventListener('click',function(){forceOpen=false;metaSync();});
  ['mAff','mCli'].forEach(function(id){$(id).addEventListener('input',function(){metaSync();});});
- document.querySelectorAll('input[name=etat]').forEach(function(r){r.addEventListener('change',function(){metaSync();});});
+ document.querySelectorAll('input[name=etat],input[name=pelle]').forEach(function(r){r.addEventListener('change',function(){metaSync();});});
  // --- V24.19.219 : cadre Local / PDL = rectangle dont on tire les 4 coins (largeur et hauteur libres) ; encadré d'envoi dans la page
  window.markerHandle=function(ctx,k){var m=S[k];if(!m)return;var z=msz(m),r=11/S.z;ctx.save();ctx.strokeStyle='#1d63d8';ctx.lineWidth=3/S.z;
   [-1,1].forEach(function(sx){[-1,1].forEach(function(sy){var h=mhp(m,sx,sy),cx=m.x+sx*z.hw,cy=m.y+sy*z.hh;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(h.x,h.y);ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(h.x,h.y,r,0,7);ctx.fill();ctx.stroke();});});ctx.restore();};
@@ -375,12 +413,15 @@ window.__S=S;
  window.mailMsg=function(title,text){return box('<b style="font-size:17px">'+esc2(title)+'</b><p style="margin:8px 0 0;white-space:pre-line">'+esc2(text)+'</p>',[{t:'Fermer',v:1,cls:'main'}]);};
  var infoWait=null;
  window.addEventListener('message',function(e){var d=e.data||{};if(!parentOrigin||e.source!==window.parent||e.origin!==parentOrigin||d.sc!=='suivi'||d.type!=='mailinfo'||!infoWait)return;var w=infoWait;infoWait=null;w(d);});
- function mailInfo(){return new Promise(function(ok){infoWait=ok;toParent({type:'mailinfo'});setTimeout(function(){if(infoWait===ok){infoWait=null;ok({error:'Pas de réponse du suivi (connexion ?). Réessaie.'});}},20000);});}
+ function mailInfo(){return new Promise(function(ok){
+  var linked=/[?&]embed=1/.test(location.search);
+  if(!parentOrigin){ok({error:linked?'Le suivi ne répond pas encore (connexion lente ?). Attends quelques secondes puis réessaie.':'Ce relevé n’est pas ouvert depuis un suivi : l’envoi par mail n’est possible que depuis le point « distance tgbt-pdl en ml » d’un suivi. Tu peux l’exporter en PNG ou en PDF.'});return;}
+  infoWait=ok;toParent({type:'mailinfo'});setTimeout(function(){if(infoWait===ok){infoWait=null;ok({error:'Le suivi n’a pas répondu à temps (connexion lente ?). Réessaie dans un instant.'});}},25000);});}
  function lst(a){return a.map(function(x){return '<div style="font-weight:700;word-break:break-all">'+esc2(x)+'</div>';}).join('');}
  // --- bouton « Envoyer par mail » (dans le suivi seulement) : encadré avec les adresses, puis enregistre, envoie le PDF ; le serveur met le conducteur en copie
  window.__say=function(ti,m){if(window.__autoMail===true){toParent({type:'mailfail',title:ti,message:m});return Promise.resolve();}return mailMsg(ti,m);};
  $('bMail').onclick=async function(){
-  var AUTO=window.__autoMail===true;var _al=window.alert,okm;if(!AUTO)window.alert=function(m){mailMsg('À compléter',String(m).replace(/ avant d’exporter/,' avant d’envoyer'));};try{okm=metaOk();}finally{window.alert=_al;}
+  var AUTO=window.__autoMail===true;if(!AUTO&&$('mAff').value.trim()&&$('mCli').value.trim()&&etat()&&!pelleVal()){$('pelle').classList.add('bad');try{$('pelle').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}await mailMsg('À compléter','Indique si le client a une pelleteuse (Oui ou Non) avant d’envoyer le mail.');return;}var _al=window.alert,okm;if(!AUTO)window.alert=function(m){mailMsg('À compléter',String(m).replace(/ avant d’exporter/,' avant d’envoyer'));};try{okm=metaOk();}finally{window.alert=_al;}
   if(!okm)return;
   if(!window.jspdf){await __say('PDF indisponible','Pas de connexion ? Impossible d’envoyer le mail pour le moment.');return;}
   var b=$('bMail'),old=b.innerHTML;b.disabled=true;
@@ -393,7 +434,7 @@ window.__S=S;
   try{S.sel=null;draw();var blob=await outJpeg();var data=buildData();
    var c=full(),land=c.width>=c.height,wmm=land?297:210,hmm=wmm*c.height/c.width;
    var doc=new jspdf.jsPDF({orientation:land?'landscape':'portrait',unit:'mm',format:[wmm,hmm]});doc.addImage(c.toDataURL('image/jpeg',0.9),'JPEG',0,0,wmm,hmm);var pdf=doc.output('blob');
-   await new Promise(function(ok,ko){pendingSave={ok:ok,ko:ko};toParent({type:'save',mail:true,file:{name:fname('jpg'),blob:blob},pdf:{name:fname('pdf'),blob:pdf},etat:ETATS[etat()]||'',longueur:lenText(),data:data,summary:lenText()?'Longueur '+lenText():''});
+   await new Promise(function(ok,ko){pendingSave={ok:ok,ko:ko};toParent({type:'save',mail:true,file:{name:fname('jpg'),blob:blob},pdf:{name:fname('pdf'),blob:pdf},etat:ETATS[etat()]||'',pelle:PELLES[pelleVal()]||'',longueur:lenText(),data:data,summary:lenText()?'Longueur '+lenText():''});
     setTimeout(function(){var er=new Error('lent');er.lent=true;ko(er);},360000);});
    setDirty(false);
   }catch(e){if(e&&e.lent)await __say('Connexion lente','L’envoi n’a pas été confirmé au bout de 6 minutes.\nVérifie dans le suivi si la photo est arrivée avant de réessayer, pour ne pas envoyer le mail deux fois.');else await __say('Pas envoyé',((e&&e.message)||e)+'\nRéessaie.');}
@@ -402,6 +443,29 @@ window.__S=S;
  window.__afterLoad=function(msg){if(!msg||!msg.mail)return;if(msg.mail==='auto')window.__autoMail=true;if(S.img)setTimeout(function(){$('bMail').onclick();},300);else __say('Pas encore de relevé','Trace d’abord la longueur PDL et enregistre-la dans le suivi, puis reviens ici pour l’envoyer par mail.');};
  if(window.EMBED||/[?&]embed=1/.test(location.search)){$('bMail').hidden=false;}
  metaSync();
+})();
+</script>
+<script id="pdl240">/* V24.19.240 : boutons rangés en groupes (placer / document / envoi), barre d'envoi fixe en bas sur téléphone, liaison tardive avec le suivi */
+(function(){
+ var PH='(max-width:700px),(max-height:520px)';function ph(){return window.matchMedia(PH).matches;}
+ var bar=document.querySelector('#tools .bar');
+ if(bar&&!bar.dataset.grp){bar.dataset.grp='1';bar.id='bar';
+  Array.prototype.slice.call(bar.children).forEach(function(c){if(c.tagName==='SPAN'&&!c.className)c.remove();});
+  var g=function(cls,ids){var d=document.createElement('div');d.className='grp '+cls;ids.forEach(function(i){var e=document.getElementById(i);if(!e)return;d.appendChild(i==='len'?e.closest('label'):e);});return d;};
+  var place=g('g-place',['bLocal','bPdl','len','bText']),edit=g('g-edit',['bUndo','bSig','bNew']),act=g('g-act',['bSave','bMail','bPng','bPdf']);act.id='barAct';
+  bar.appendChild(place);bar.appendChild(edit);bar.appendChild(act);
+  var u=document.getElementById('bUndo');if(u){u.title='Annuler la dernière action';u.setAttribute('aria-label','Annuler la dernière action');}var nw=document.getElementById('bNew');if(nw)nw.setAttribute('aria-label','Choisir une autre photo');
+  if(!/[?&]embed=1/.test(location.search)){var p=document.createElement('p');p.id='soloNote';p.textContent='Relevé libre : exporte en PNG ou en PDF. Pour l’enregistrer dans un chantier ou l’envoyer par mail, ouvre Longueur PDL depuis le point « distance tgbt-pdl en ml » d’un suivi.';bar.parentNode.insertBefore(p,bar.nextSibling);}
+ }
+ // la photo occupe le reste de l'écran, au-dessus de la barre d'envoi fixée en bas
+ var o=window.pdlWrapH;
+ if(typeof o==='function')window.pdlWrapH=function(w){var h=o(w);if(ph()){var a=document.getElementById('barAct');if(a&&getComputedStyle(a).position==='fixed')h-=a.offsetHeight+4;}return Math.round(Math.max(240,h));};
+ // le suivi répond après les 30 secondes d'attente : on se relie quand même (boutons « Enregistrer » et « Mail », relevé enregistré)
+ window.__lateLoad=async function(d){window.__tlate=false;var n=document.getElementById('noLink');if(n)n.remove();$('bSave').hidden=false;var hp=document.querySelector('header p');if(hp)hp.textContent='Relevé du suivi : touche « Enregistrer dans le suivi » quand tu as fini.';
+  if(d.mail==='auto')window.__autoMail=true;
+  if(d.data&&d.data.img&&!S.img){try{await restore(d.data);}catch(e){alert('La version enregistrée dans le suivi n’a pas pu être ouverte : '+(e.message||e));}}
+  dirty=true;setDirty(false);try{window.__afterLoad&&window.__afterLoad(d);}catch(e){}
+  if(typeof metaSync==='function')metaSync();};
 })();
 </script>
 <!-- Dessins à la place des emojis (mêmes dessins que Suivi Chantier). Pour revenir en arrière : supprimer ce bloc. -->
